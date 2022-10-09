@@ -1,8 +1,8 @@
-from INS401_Ethernet import Ethernet_Dev
-from Test_Cases import Test_Section
-from Test_Cases import Test_Case
-from INS401_Tests import Test_Scripts
-from INS401_Tests import Test_Environment
+from src.conmunicator.INS401_Ethernet import Ethernet_Dev
+from src.test_framwork.Test_Cases import Test_Section
+from src.test_framwork.Test_Cases import Test_Case
+from src.Ethernet_test.INS401_Test_Center import Test_Scripts
+from src.Ethernet_test.INS401_Test_Center import Test_Environment
 #import scripts
 
 def main():
@@ -34,7 +34,7 @@ def main():
     print("##########  Results   #####################################\n")
     env.print_results()
 
-    file_name = 'test_results_' + str(serial_number) + '_' + str(version) + '.csv'
+    file_name = f'./result/test_results_{str(serial_number)}_{str(version)}.csv'
     env.log_results(file_name)
 
 

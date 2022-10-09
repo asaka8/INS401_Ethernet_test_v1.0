@@ -3,13 +3,11 @@ import threading
 import struct
 import sys
 import datetime
+import collections
 from scapy.all import sendp, sniff, conf, AsyncSniffer
-from scapy.layers.l2 import Ether
-
 
 PING_TYPE     = [0x01, 0xcc]
 COMMAND_START = [0x55, 0x55]
-
 
 class Ethernet_Dev:
     '''Ethernet_Dev'''
@@ -32,6 +30,7 @@ class Ethernet_Dev:
         self.serial_number = None
         self.model_string = None
         self.app_version = None
+        self.receive_cache = collections.deque(maxlen=10000)
 
         if options and options.device_type != 'auto':
             self.filter_device_type = options.device_type
@@ -52,6 +51,10 @@ class Ethernet_Dev:
         self.dst_mac = packet.src
 
     def confirm_iface(self, iface, times):
+        '''
+        iface[0]: mac of target INS401
+        iface[1]: mac of laptop
+        '''
         filter_exp = 'ether dst host ' + \
             iface[1] + ' and ether[16:2] == 0x01cc'
         src_mac = bytes([int(x, 16) for x in iface[1].split(':')])
@@ -61,7 +64,7 @@ class Ethernet_Dev:
             iface=iface[0], prn=self.handle_receive_packet, filter=filter_exp)
         async_sniffer.start()
         time.sleep(0.01)
-        sendp(command_line, iface=iface[0], verbose=0, count = 2)
+        sendp(command_line, iface=iface[0], verbose=0, count = 2) #????? iface[1]
         time.sleep(0.5)
         async_sniffer.stop()
 
@@ -129,6 +132,31 @@ class Ethernet_Dev:
             
         sniff(prn=callback, count=count, iface=self.iface, filter=filter_exp, timeout = timeout)
 
+    def read_data(self):
+        data = None
+        if len(self.receive_cache) > 0:
+            data = self.receive_cache.popleft()
+            return data
+        return data
+
+    def start_listen_data(self, filter_type=None):
+        if filter_type == None:
+            filter_exp = f'ether src host {self.dst_mac} '
+        else:
+            filter_exp = f'ether src host {self.dst_mac}  and ether[16:2] == {filter_type}'
+        
+        self.async_sniffer = AsyncSniffer(
+            iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
+        self.async_sniffer.start()
+        time.sleep(0.1)
+
+    def stop_listen_data(self):
+        self.async_sniffer.stop()
+    
+    def handle_catch_packet(self, packet):
+        packet_raw = bytes(packet)[12:]
+        self.receive_cache.append(packet_raw[2:])
+    
     def handle_receive_read_result(self, packet):
         self.read_result = bytes(packet)
 
@@ -213,10 +241,7 @@ class Ethernet_Dev:
             return False
         
     def reset_buffer(self):
-        '''
-        reset buffer
-        '''
-        pass
+        self.receive_cache = collections.deque(maxlen=10000)
 
     def get_src_mac(self):
         if self.src_mac:        
