@@ -12,8 +12,6 @@ from ..test_framwork.Test_Logger import TestLogger
 INPUT_PACKETS = [b'\x01\xcc', b'\x02\xcc', b'\x03\xcc', b'\x04\xcc', b'\x05\xcc', b'\x06\xcc', b'\x01\x0b', b'\x02\x0b', b'\x07\xcc']
 OTHER_OUTPUT_PACKETS = [b'\x01\n', b'\x02\n', b'\x03\n', b'\x04\n', b'\x05\n', b'\x06\n']
 
-user_parameters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-random_parameters = [0.5, 1, 10, 10.5, 90, 180, -0.5, -1, -10, -10.5, -90, -180]
 rtcm_data = [1, 2, 3, 4, 5, 6, 7, 8]
 vehicle_speed_value = 80
 LONGTERM_RUNNING_COUNT = 10000
@@ -87,7 +85,7 @@ class Test_Scripts:
             message_bytes.extend(field_id_bytes)
 
             if field_id >= 0 and field_id < 12:
-                field_value_bytes = struct.pack('<f', user_parameters[field_id])
+                field_value_bytes = struct.pack('<f', 0)
                 message_bytes.extend(field_value_bytes)
                 
             response = self.uut.write_read_response(command, message_bytes, 0.1)
@@ -344,7 +342,7 @@ class Test_Scripts:
             set_message_bytes.extend(field_id_bytes)
 
             if (field_id >= 0) and (field_id <= 12):
-                params = random.choice(random_parameters)
+                params = round(random.uniform(-180, 180), 1)
                 except_list.append(params)
                 field_value_bytes = struct.pack('<f', params)
                 set_message_bytes.extend(field_value_bytes)
@@ -421,21 +419,26 @@ class Test_Scripts:
         message_bytes = []
         
         # long term count manual setting
-        result = self.uut.async_write_read(command, message_bytes, LONGTERM_RUNNING_COUNT)       
+        result = self.uut.async_write_read(command, message_bytes, self.properties["long term test"]["LONGTERM_RUNNING_COUNT"])       
         if(result):
             return True, 'Non zero packets', 'Non zero packets'
         else:
             return False, 'Non zero packets', 'Non zero packets'
 
     def long_term_test_setup(self):
+        longterm_run_time = self.properties["long term test"]["LONGTERM_RUNNING_TIME"]
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin' 
         self.test_log.cerat_binf_sct5(logf_name)
-        self.uut.start_listen_data()
         start_time = time.time()
-        while time.time() - start_time <= 180:
+        self.uut.start_listen_data([0x020a, 0x030a, 0x050a, 0x010a])
+        self.uut.reset_buffer()        
+        while time.time() - start_time <= longterm_run_time:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
+        self.uut.check_len()
+        self.uut.stop_listen_data()
+        return True, '', ''          
 
     def gnss_solution_gps_time_jump_test(self):
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin'
@@ -449,10 +452,10 @@ class Test_Scripts:
             logf = open(logf_name, 'rb')
         log_data = logf.read()
         gnss_packet_type = [0x55, 0x55, 0x02, 0x0a]
-        for i in log_data:
+        for i in range(len(log_data)):
             data = log_data[i:i+87]
             packet_start_flag = data.find(bytes(gnss_packet_type))
-            if packet_start_flag != -1:
+            if packet_start_flag == 0:
                 payload = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
@@ -460,18 +463,21 @@ class Test_Scripts:
 
         for i in range(len(gps_time_of_week_lst)):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
-            if time_interval != 1:
+            if time_interval != 1000:
                 error_pos = i
                 result = False
                 break
         
         if len(gps_time_of_week_lst) == 0:
             result = False
+            error_pos = None
         
         if result == True:
             return True, 'No time jump', 'No time jump'
+        elif result == False and error_pos == None:
+            return False, 'No gnss single', 'No time jump'
         else:
-            return False, 'No time jump', f'No.{error_pos} packet time jump'
+            return False, f'No.{error_pos} packet time jump', 'No time jump'
 
     def ins_solution_gps_time_jump_test(self):
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin'
@@ -486,28 +492,31 @@ class Test_Scripts:
 
         log_data = logf.read()
         ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
-        for i in log_data:
+        for i in range(len(log_data)):
             data = log_data[i:i+120]
             packet_start_flag = data.find(bytes(ins_packet_type))
-            if packet_start_flag != -1:
+            if packet_start_flag == 0:
                 payload = data[8:-2]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
         for i in range(len(gps_time_of_week_lst)):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
-            if time_interval != 0.01:
+            if time_interval != 10:
                 error_pos = i
                 result = False
                 break
         
         if len(gps_time_of_week_lst) == 0:
             result = False
-
+            error_pos = None
+        
         if result == True:
             return True, 'No time jump', 'No time jump'
+        elif result == False and error_pos == None:
+            return False, 'No gnss single', 'No time jump'
         else:
-            return False, 'No time jump', f'No.{error_pos} packet time jump'
+            return False, f'No.{error_pos} packet time jump', 'No time jump'
 
     def dm_solution_gps_time_jump_test(self):
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin'
@@ -522,28 +531,31 @@ class Test_Scripts:
 
         log_data = logf.read()
         ins_packet_type = [0x55, 0x55, 0x05, 0x0a]
-        for i in log_data:
+        for i in range(len(log_data)):
             data = log_data[i:i+32]
             packet_start_flag = data.find(bytes(ins_packet_type))
-            if packet_start_flag != -1:
+            if packet_start_flag == 0:
                 payload = data[8:-2]
                 fmt = '<HIIfff'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
         for i in range(len(gps_time_of_week_lst)):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
-            if time_interval != 1:
+            if time_interval != 1000:
                 error_pos = i
                 result = False
                 break
 
         if len(gps_time_of_week_lst) == 0:
             result = False
+            error_pos = None
         
         if result == True:
             return True, 'No time jump', 'No time jump'
+        elif result == False and error_pos == None:
+            return False, 'No gnss single', 'No time jump'
         else:
-            return False, 'No time jump', f'No.{error_pos} packet time jump'
+            return False, f'No.{error_pos} packet time jump', 'No time jump'
 
     def imu_solution_gps_time_jump_test(self):
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin'
@@ -558,28 +570,31 @@ class Test_Scripts:
 
         log_data = logf.read()
         ins_packet_type = [0x55, 0x55, 0x01, 0x0a]
-        for i in log_data:
+        for i in range(len(log_data)):
             data = log_data[i:i+40]
             packet_start_flag = data.find(bytes(ins_packet_type))
-            if packet_start_flag != -1:
+            if packet_start_flag == 0:
                 payload = data[8:-2]
                 fmt = '<HIffffff'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
         for i in range(len(gps_time_of_week_lst)):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
-            if time_interval != 0.01:
+            if time_interval != 10:
                 error_pos = i
                 result = False
                 break
         
         if len(gps_time_of_week_lst) == 0:
             result = False
-
+            error_pos = None
+        
         if result == True:
             return True, 'No time jump', 'No time jump'
+        elif result == False and error_pos == None:
+            return False, 'No gnss single', 'No time jump'
         else:
-            return False, 'No time jump', f'No.{error_pos} packet time jump'
+            return False, f'No.{error_pos} packet time jump', 'No time jump'
 
     def parameters_set_loop(self, field_id, val):
         set_command = INPUT_PACKETS[2]
@@ -718,13 +733,13 @@ class Test_Scripts:
             params_lst.append(params)
 
         if bytes(val) == b'VF33':
-            except_params_lst = [-1.683913, 0.48179, -1.053507, -1.464094, 0.140739, 0.057258, -1.464094, 0.140739, 0.057258, 0.0, 0.0, -90.0]
+            except_params_lst = self.properties["vehicle code"]["vcode params"]["VF33"]
         if bytes(val) == b'VF34':
-            except_params_lst = [-1.995312, 0.504686, -1.044098, -1.556083, 0.140739, 0.058229, -1.556083, 0.140739, 0.058229, 0.0, 0.0, -90.0]
+            except_params_lst = self.properties["vehicle code"]["vcode params"]["VF34"]
         if bytes(val) == b'VF35':
-            except_params_lst = [-2.036016, -0.3862, -0.903368, -1.6835, -0.00416, 0.275406, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            except_params_lst = self.properties["vehicle code"]["vcode params"]["VF35"]
         if bytes(val) == b'VF36':
-            except_params_lst = [-2.57937, -0.376738, -1.017361, -1.801946, 0.004086, 0.173387, 0.0, 0.0, 0.0, 0.0, -12.0, 180.0]
+            except_params_lst = self.properties["vehicle code"]["vcode params"]["VF36"]
 
         if params_lst == except_params_lst:
             result = True
