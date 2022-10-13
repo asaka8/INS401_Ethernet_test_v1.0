@@ -430,7 +430,7 @@ class Test_Scripts:
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin' 
         self.test_log.cerat_binf_sct5(logf_name)
         start_time = time.time()
-        self.uut.start_listen_data([0x020a, 0x030a, 0x050a, 0x010a])
+        self.uut.start_listen_data()
         self.uut.reset_buffer()        
         while time.time() - start_time <= longterm_run_time:
             data = self.uut.read_data()
