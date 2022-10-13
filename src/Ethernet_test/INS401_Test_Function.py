@@ -461,7 +461,7 @@ class Test_Scripts:
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
 
-        for i in range(len(gps_time_of_week_lst)):
+        for i in range(len(gps_time_of_week_lst)-1):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
             if time_interval != 1000:
                 error_pos = i
@@ -500,7 +500,7 @@ class Test_Scripts:
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
-        for i in range(len(gps_time_of_week_lst)):
+        for i in range(len(gps_time_of_week_lst)-1):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
             if time_interval != 10:
                 error_pos = i
@@ -539,7 +539,7 @@ class Test_Scripts:
                 fmt = '<HIIfff'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
-        for i in range(len(gps_time_of_week_lst)):
+        for i in range(len(gps_time_of_week_lst)-1):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
             if time_interval != 1000:
                 error_pos = i
@@ -578,7 +578,7 @@ class Test_Scripts:
                 fmt = '<HIffffff'
                 gps_time_of_week = struct.unpack(fmt, payload)[1]
                 gps_time_of_week_lst.append(gps_time_of_week)
-        for i in range(len(gps_time_of_week_lst)):
+        for i in range(len(gps_time_of_week_lst)-1):
             time_interval = gps_time_of_week_lst[i+1] - gps_time_of_week_lst[i]
             if time_interval != 10:
                 error_pos = i
