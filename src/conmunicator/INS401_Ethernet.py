@@ -140,10 +140,11 @@ class Ethernet_Dev:
         return data
 
     def start_listen_data(self, filter_type=None):
+        hard_code_mac = '04:00:00:00:00:04'
         if filter_type == None:
-            filter_exp = f'ether src host {self.dst_mac} '
+            filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac} '
         else:
-            filter_exp = f'ether src host {self.dst_mac}  and ether[16:2] == {filter_type}'
+            filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac}  and ether[16:2] == {filter_type}'
         
         self.async_sniffer = AsyncSniffer(
             iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
@@ -152,6 +153,9 @@ class Ethernet_Dev:
 
     def stop_listen_data(self):
         self.async_sniffer.stop()
+
+    def check_len(self):
+        print(len(self.receive_cache))
     
     def handle_catch_packet(self, packet):
         packet_raw = bytes(packet)[12:]
@@ -241,7 +245,7 @@ class Ethernet_Dev:
             return False
         
     def reset_buffer(self):
-        self.receive_cache = collections.deque(maxlen=10000)
+        self.receive_cache = collections.deque(maxlen=100000)
 
     def get_src_mac(self):
         if self.src_mac:        
