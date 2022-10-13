@@ -1,9 +1,5 @@
 from src.conmunicator.INS401_Ethernet import Ethernet_Dev
-from src.test_framwork.Test_Cases import Test_Section
-from src.test_framwork.Test_Cases import Test_Case
-from src.Ethernet_test.INS401_Test_Center import Test_Scripts
 from src.Ethernet_test.INS401_Test_Center import Test_Environment
-#import scripts
 
 def main():
     uut = Ethernet_Dev()
