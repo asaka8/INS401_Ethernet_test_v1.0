@@ -382,6 +382,7 @@ class Ethernet_Dev:
                 formatted = ''
 
         return formatted
+        
     def calc_crc(self, payload):
         '''
         Calculates 16-bit CRC-CCITT

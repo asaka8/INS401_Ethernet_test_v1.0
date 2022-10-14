@@ -436,7 +436,6 @@ class Test_Scripts:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
-        self.uut.check_len()
         self.uut.stop_listen_data()
         return True, '', ''          
 
