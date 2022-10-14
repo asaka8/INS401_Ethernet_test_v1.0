@@ -22,7 +22,7 @@ class Test_Environment:
             self.values.append(value)
 
     # Add test scetions & test scripts here
-    def setup_tests(self):
+    def setup_tests_(self):
         section1 = Test_Section("User command test")
         self.test_sections.append(section1)
         section1.add_test_case(Code("Get production test",  self.scripts.get_production_info))
@@ -91,7 +91,7 @@ class Test_Environment:
         section6.add_test_case(Condition_Check("VF36 vehicle code setting params test", self.scripts.vehicle_code_params_test, self.paramIds[13], [0x56, 0x46, 0x33, 0x36]))
         section6.add_test_case(Condition_Check_dlc("vehicle table version test", self.scripts.vehicle_table_version_test, self.properties["vehicle code"]["vcode version"]))
 
-    def setup_tests_(self):
+    def setup_tests(self):
         '''for update
         '''
         section5 = Test_Section("Longterm Test")
