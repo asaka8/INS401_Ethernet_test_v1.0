@@ -23,7 +23,7 @@ class Test_Scripts:
         self.eth = Ethernet_Dev()
         Test_Scripts.uut = device
         self.product_sn = None
-        self.test_time = time.strftime("%Y_%m_%d_%H", time.localtime())
+        self.test_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
         jsonf = Json_Creat()
         self.test_log = TestLogger()
         self.properties = jsonf.creat()
