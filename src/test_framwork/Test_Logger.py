@@ -1,6 +1,8 @@
 import os
 import csv
 
+from scapy.utils import PcapWriter
+
 class TestLogger:
     def __init__(self, file_name=None):
         self._file_name = file_name
@@ -36,5 +38,9 @@ class TestLogger:
     def write2bin(self, data):
         if data is not None:
             self.logf.write(data)
+
+    def write2pcap(self, data, logf):
+        pktdump = PcapWriter(logf, append=True, sniff=True)
+        pktdump.write(data)
 
     
