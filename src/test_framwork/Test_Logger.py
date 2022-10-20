@@ -40,6 +40,9 @@ class TestLogger:
             self.logf.write(data)
 
     def write2pcap(self, data, logf):
+        data_dir = f'./data/Packet_long_term_test_data'
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
         pktdump = PcapWriter(logf, append=True, sniff=True)
         pktdump.write(data)
 
