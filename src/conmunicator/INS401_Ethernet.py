@@ -24,6 +24,7 @@ class Ethernet_Dev:
         self.filter_device_type = None
         self.filter_device_type_assigned = False
         self.receive_packet_count = 0
+        self.tlock = threading.Lock()
 
         self.iface_confirmed = False
         
@@ -148,11 +149,13 @@ class Ethernet_Dev:
         
         self.async_sniffer = AsyncSniffer(
             iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
+        self.tlock.acquire()
         self.async_sniffer.start()
         time.sleep(0.1)
 
     def stop_listen_data(self):
         self.async_sniffer.stop()
+        self.tlock.release()
 
     def check_len(self):
         print(len(self.receive_cache))
@@ -382,7 +385,7 @@ class Ethernet_Dev:
                 formatted = ''
 
         return formatted
-        
+
     def calc_crc(self, payload):
         '''
         Calculates 16-bit CRC-CCITT
