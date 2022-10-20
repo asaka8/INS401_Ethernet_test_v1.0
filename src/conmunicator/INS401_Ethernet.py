@@ -140,15 +140,19 @@ class Ethernet_Dev:
             return data
         return data
 
-    def start_listen_data(self, filter_type=None):
+    def start_listen_data(self, filter_type=None, log2pcap=False):
         hard_code_mac = '04:00:00:00:00:04'
         if filter_type == None:
             filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac} '
         else:
             filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac}  and ether[16:2] == {filter_type}'
         
-        self.async_sniffer = AsyncSniffer(
-            iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
+        if log2pcap == False:
+            self.async_sniffer = AsyncSniffer(
+                iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
+        elif log2pcap == True:
+            self.async_sniffer = AsyncSniffer(
+                iface=self.iface, prn=self.handle_catch_whole_eth_packet, filter=filter_exp, store=0)
         self.tlock.acquire()
         self.async_sniffer.start()
         time.sleep(0.1)
@@ -163,6 +167,9 @@ class Ethernet_Dev:
     def handle_catch_packet(self, packet):
         packet_raw = bytes(packet)[12:]
         self.receive_cache.append(packet_raw[2:])
+
+    def handle_catch_whole_eth_packet(self, packet):
+        self.receive_cache.append(packet)
     
     def handle_receive_read_result(self, packet):
         self.read_result = bytes(packet)
