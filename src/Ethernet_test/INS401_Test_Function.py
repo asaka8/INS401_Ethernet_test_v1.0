@@ -435,10 +435,16 @@ class Test_Scripts:
         self.uut.reset_buffer()        
         while time.time() - start_time <= longterm_run_time:
             data = self.uut.read_data()
-            if data is not None:
+            self.test_log.write2bin(data)
+            # self.test_log.write2pcap(data, logf_name)
+        self.uut.stop_listen_data()
+        if self.uut.check_len() != 0:
+            while True:
+                data = self.uut.read_data()
                 self.test_log.write2bin(data)
-                # self.test_log.write2pcap(data, logf_name)
-        self.uut.stop_listen_data()       
+                if self.uut.check_len() == 0:
+                    break
+        return True, '', ''          
 
     def gnss_solution_gps_time_jump_test(self):
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin'
