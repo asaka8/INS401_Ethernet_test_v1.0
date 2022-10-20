@@ -428,6 +428,7 @@ class Test_Scripts:
     def long_term_test_setup(self):
         longterm_run_time = self.properties["long term test"]["LONGTERM_RUNNING_TIME"]
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin' 
+        # logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.pcap' 
         self.test_log.cerat_binf_sct5(logf_name)
         start_time = time.time()
         self.uut.start_listen_data()
@@ -436,8 +437,8 @@ class Test_Scripts:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
-        self.uut.stop_listen_data()
-        return True, '', ''          
+                # self.test_log.write2pcap(data, logf_name)
+        self.uut.stop_listen_data()       
 
     def gnss_solution_gps_time_jump_test(self):
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin'
