@@ -134,10 +134,10 @@ class Ethernet_Dev:
         sniff(prn=callback, count=count, iface=self.iface, filter=filter_exp, timeout = timeout)
 
     def read_data(self):
-        data = None
-        if len(self.receive_cache) > 0:
+        try:
             data = self.receive_cache.popleft()
-            return data
+        except:
+            data = None
         return data
 
     def start_listen_data(self, filter_type=None, log2pcap=False):
@@ -162,7 +162,7 @@ class Ethernet_Dev:
         self.tlock.release()
 
     def check_len(self):
-        print(len(self.receive_cache))
+        return len(self.receive_cache)
     
     def handle_catch_packet(self, packet):
         packet_raw = bytes(packet)[12:]
