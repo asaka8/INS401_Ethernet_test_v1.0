@@ -770,7 +770,6 @@ class Test_Scripts:
         else:
             return False, f'vehicle table version: {except_ver}', f'vehicle table version: {vcode_ver}'
 
-
     def DM_packet_reasonable_check_week(self):
         result = False
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_week.bin'
@@ -853,4 +852,102 @@ class Test_Scripts:
                 return result, f'captured 1 gps packets', 'number of gps packets >= 2'
             else:
                 return result, f'Interval of gps packets is not 1000ms', 'interval != 1000ms'
+
+    def DM_packet_reasonable_check_temp(self):
+        #result = False
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_temp.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        temp_list = []
+        self.uut.start_listen_data(0x050a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+22]
+                fmt = '<HIIfff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_millisecs = parse_data_lst[1]
+                IMU_temp = parse_data_lst[3]
+                MCU_temp = parse_data_lst[4]
+                GNSS_chip_temp = parse_data_lst[5]
+                print(f'IMU = {IMU_temp}, MCU = {MCU_temp}, GNSS = {GNSS_chip_temp}')
+                temp_list.append([IMU_temp,MCU_temp,GNSS_chip_temp])
+        self.uut.stop_listen_data()
+        if len(temp_list) == 0:
+            print('no DM packets!')
+
+        imu_out = 0
+        mcu_out = 0
+        gnss_out = 0
+        for i in range(len(temp_list)):
+            if temp_list[i][0] < 85 and temp_list[i][0] > 40:
+                if temp_list[i][1] < 85 and temp_list[i][1] > 40:
+                    if temp_list[i][2] < 85 and temp_list[i][2] > 40:
+                        continue
+                    else:
+                        gnss_out = gnss_out +1
+                else:
+                    mcu_out = mcu_out +1
+            else:
+                imu_out = imu_out +1
+        
+        if len(temp_list) == 0:
+            return False, 'no DM packets', 'could capture DM packets'
+        else:
+            if imu_out + mcu_out + gnss_out == 0:
+                return True, 'Temperature of IMU/MCU/GNSS chip is in reasonable range', '-40 < temp <85'
+            else:
+                return False, f'amount out of temp range: IMU={imu_out},MCU={mcu_out},GNSS={gnss_out}', '-40 < temp <85'
+
+    def DM_packet_reasonable_check_status(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        pps_list = []
+        self.uut.start_listen_data(0x050a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+22]
+                fmt = '<HIIfff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_millisecs = parse_data_lst[1]
+                dev_status = parse_data_lst[2]
+                IMU_temp = parse_data_lst[3]
+                MCU_temp = parse_data_lst[4]
+                GNSS_chip_temp = parse_data_lst[5]
+                dev_status_bin = "{0:{fill}32b}".format(0, fill='0')
+                #PPS status = bit10, 31-10=21
+                pps_status = dev_status_bin[21]
+                if pps_status == '1':
+                    print('1PPS pulse exception ')
+                elif pps_status == '0':
+                    print('PPS normal ')
+                pps_list.append(gps_millisecs)
+        self.uut.stop_listen_data()
+        if len(pps_list) == 0:
+            print('no DM packets!')
+
+        pps_error_count = 0
+        for i in range(len(pps_list)):
+            if i == '1':
+                pps_error_count = pps_error_count +1
+            else:
+                continue
+        
+        if len(pps_list) == 0:
+            return False, 'no DM packets', 'could capture DM packets'
+        else:
+            if pps_error_count > 0:
+                return False, f'amount of error pps status = {pps_error_count}', 'pps status is always 0'
+            else:
+                return True, 'pps status is always 0', 'pps status is always 0'
         
