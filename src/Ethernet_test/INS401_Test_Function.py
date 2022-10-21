@@ -773,11 +773,10 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_week(self):
         result = False
-        interval = None
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_week.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
-        gps_millisecs_lst = []
+        gps_secs_lst = []
         self.uut.start_listen_data(0x020a)
         start_time = time.time()
         self.uut.reset_buffer()
@@ -791,15 +790,9 @@ class Test_Scripts:
                 gps_week = parse_data_lst[0]
                 gps_millisecs = parse_data_lst[1]
                 gps_sec = gps_time(gps_week, gps_millisecs/1000)
-                gps_millisecs_lst.append(gps_sec)
-                #print(gps_sec)
-        #real_time = datetime.now()
-        #print(f'real time = {real_time}')
-        #print(real_time.timestamp())
-        #time_diff = float(real_time.timestamp()) - gps_millisecs_lst[-1]
+                gps_secs_lst.append(gps_sec)
 
-        real_time, time_diff = cal_time_diff(gps_millisecs_lst[-1])
-        #print(time_diff)
+        real_time, time_diff = cal_time_diff(gps_secs_lst[-1])
         self.uut.stop_listen_data()
 
         if time_diff < 1:
@@ -808,9 +801,56 @@ class Test_Scripts:
             result = False
         
         if result == True:
-            return result, f'gps time {stamptime_to_datetime(gps_millisecs_lst[-1])} == local time {real_time}', 'time<1s'
+            return result, f'gps time {stamptime_to_datetime(gps_secs_lst[-1])} == local time {real_time}', 'time<1s'
         else:
-            return result, f'gps time {stamptime_to_datetime(gps_millisecs_lst[-1])} \n           local time {real_time} !The gps week is not match the real time of tesing!', 'time>1s'
+            if len(gps_secs_lst) == 0:
+                return result, f'no gps packets', 'could capture gps packets'
+            elif len(gps_secs_lst) == 1:
+                return result, f'captured 1 gps packets', 'number of gps packets >= 2'
+            else:
+                return result, f'gps time {stamptime_to_datetime(gps_secs_lst[-1])} \n           local time {real_time} !The gps week is not match the real time of tesing!', 'time>1s'
 
+    def DM_packet_reasonable_check_time_ms(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        gps_millisecs_lst = []
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_millisecs = parse_data_lst[1]
+                gps_millisecs_lst.append(gps_millisecs)
+        self.uut.stop_listen_data()
+        if len(gps_millisecs_lst) == 0:
+            print('no gps packets!')
 
+        for i in range(len(gps_millisecs_lst)):
+            if i + 1 < len(gps_millisecs_lst):
+                interval = gps_millisecs_lst[i+1] - gps_millisecs_lst[i]
+            else:
+                break
+            if interval == 1000:
+                result = True
+            else:
+                result = False
+                break
+        
+        if result == True:
+            return result, f'Interval of gps packets = 1000ms', 'interval = 1000ms'
+        else:
+            if len(gps_millisecs_lst) == 0:
+                return result, f'no gps packets', 'could capture gps packets'
+            elif len(gps_millisecs_lst) == 1:
+                return result, f'captured 1 gps packets', 'number of gps packets >= 2'
+            else:
+                return result, f'Interval of gps packets is not 1000ms', 'interval != 1000ms'
         

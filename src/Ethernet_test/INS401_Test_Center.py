@@ -94,7 +94,7 @@ class Test_Environment:
         section9 = Test_Section("DM packet reasonable check")
         self.test_sections.append(section9)
         section9.add_test_case(Code("week", self.scripts.DM_packet_reasonable_check_week))
-        #section9.add_test_case(Code("time ms", self.scripts.DM_packet_reasonable_check_time_ms))
+        section9.add_test_case(Code("time ms", self.scripts.DM_packet_reasonable_check_time_ms))
 
     def setup_tests_(self):
         '''for update
