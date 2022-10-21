@@ -5,7 +5,7 @@ import random
 
 from tqdm import trange
 from ..conmunicator.INS401_Ethernet import Ethernet_Dev
-from moudle.gps_time_module import gps_time
+from moudle.gps_time_module import gps_time, cal_time_diff, stamptime_to_datetime
 from ..test_framwork.Jsonf_Creater import Json_Creat
 from ..test_framwork.Test_Logger import TestLogger
 
@@ -769,3 +769,48 @@ class Test_Scripts:
             return True, f'vehicle table version: {except_ver}', f'vehicle table version: {vcode_ver}'
         else:
             return False, f'vehicle table version: {except_ver}', f'vehicle table version: {vcode_ver}'
+
+
+    def DM_packet_reasonable_check_week(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        gps_millisecs_lst = []
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_week = parse_data_lst[0]
+                gps_millisecs = parse_data_lst[1]
+                gps_sec = gps_time(gps_week, gps_millisecs/1000)
+                gps_millisecs_lst.append(gps_sec)
+                #print(gps_sec)
+        #real_time = datetime.now()
+        #print(f'real time = {real_time}')
+        #print(real_time.timestamp())
+        #time_diff = float(real_time.timestamp()) - gps_millisecs_lst[-1]
+
+        real_time, time_diff = cal_time_diff(gps_millisecs_lst[-1])
+        #print(time_diff)
+        self.uut.stop_listen_data()
+
+        if time_diff < 1:
+            result = True
+        else:
+            result = False
+        
+        if result == True:
+            return result, f'gps time {stamptime_to_datetime(gps_millisecs_lst[-1])} == local time {real_time}', 'time<1s'
+        else:
+            return result, f'gps time {stamptime_to_datetime(gps_millisecs_lst[-1])} \n           local time {real_time} !The gps week is not match the real time of tesing!', 'time>1s'
+
+
+        
