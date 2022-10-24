@@ -133,6 +133,14 @@ def gps_time(gps_week, gps_timeofweek):
     out_stamptime = datetime_to_stamptime(utc_to_local(input_strtime))
     return out_stamptime
 
+def get_curr_time():
+    currenect_time = datetime.datetime.now()
+    return currenect_time
+
+def cal_time_diff(gps_time_ms, current_time):
+    time_diff = float(current_time.timestamp()) - gps_time_ms
+    return time_diff
+
 if __name__ == "__main__":
     tz_timezone = get_localzone()
     cur_stamptime = time.time()
