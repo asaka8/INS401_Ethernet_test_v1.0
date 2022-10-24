@@ -95,8 +95,10 @@ class Test_Environment:
         self.test_sections.append(section9)
         section9.add_test_case(Code("week", self.scripts.DM_packet_reasonable_check_week))
         section9.add_test_case(Code("time ms", self.scripts.DM_packet_reasonable_check_time_ms))
-        section9.add_test_case(Code("check status", self.scripts.DM_packet_reasonable_check_temp))
-        section9.add_test_case(Code("check status", self.scripts.DM_packet_reasonable_check_status))
+        section9.add_test_case(Code("check temperature", self.scripts.DM_packet_reasonable_check_temp))
+        section9.add_test_case(Code("check GNSS status", self.scripts.DM_packet_reasonable_check_status_gnss))
+        section9.add_test_case(Code("check IMU status", self.scripts.DM_packet_reasonable_check_status_imu))
+        section9.add_test_case(Code("check Operation status", self.scripts.DM_packet_reasonable_check_status_operation))
 
     def setup_tests_(self):
         '''for update

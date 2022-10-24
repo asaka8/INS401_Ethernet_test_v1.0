@@ -812,9 +812,9 @@ class Test_Scripts:
             return False, f'no DM packets', 'could capture DM packets'
         else:
             if unmatch_time_count == 0 and gps_signal_loss != len(gps_week_list):
-                return True, f'number of unmatch real time = {unmatch_time_count}, no gps singal = {gps_signal_loss}', 'match real time <1s'
+                return True, f'number of unmatch real time = {unmatch_time_count}, packets have gps time = {len(gps_week_list)-gps_signal_loss}', 'match real time <1s'
             elif unmatch_time_count == 0 and gps_signal_loss == len(gps_week_list):
-                return False, f'number of no gps singal = {gps_signal_loss}, DM packets = {len(gps_week_list)} ', 'at last one DM packet was GPS time'
+                return False, f'packets have gps time = {len(gps_week_list)-gps_signal_loss}, DM packets = {len(gps_week_list)} ', 'at last one DM packet has GPS time'
             else:
                 return False, f'number of unmatch real time = {unmatch_time_count}, no gps singal = {gps_signal_loss}', 'match real time, <1s'
 
@@ -863,11 +863,11 @@ class Test_Scripts:
         if len(gps_week_list) == 0:
             return False, f'no DM packets', 'could capture DM packets'
         elif len(gps_week_list) < 2:
-            return False, f'DM packets = {len(gps_week_list)} ', 'at last need two neighbor DM packets were GPS time'
+            return False, f'DM packets = {len(gps_week_list)} ', 'at last need two neighbor DM packets have GPS time'
         elif len(gps_week_list) >=2 and neighbor_gps_pair <1:
-            return False, f'DM packets = {len(gps_week_list)}, gps singal = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+            return False, f'DM packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pairs = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
         else:
-            return True, f'DM packets = {len(gps_week_list)}, gps singal = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+            return True, f'DM packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
 
     def DM_packet_reasonable_check_temp(self):
         #result = False
@@ -918,13 +918,15 @@ class Test_Scripts:
             else:
                 return False, f'amount out of temp range: IMU={imu_out},MCU={mcu_out},GNSS={gnss_out}', '-40 < temp <85'
 
-    def DM_packet_reasonable_check_status(self):
+    def DM_packet_reasonable_check_status_gnss(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status.bin'
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_gnss.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         pps_list = []
+        gnss_data_list = []
+        gnss_signal_list = []
         self.uut.start_listen_data(0x050a)
         start_time = time.time()
         self.uut.reset_buffer()
@@ -935,35 +937,176 @@ class Test_Scripts:
                 parse_data = data[8:8+22]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
-                gps_millisecs = parse_data_lst[1]
-                dev_status = parse_data_lst[2]
-                IMU_temp = parse_data_lst[3]
-                MCU_temp = parse_data_lst[4]
-                GNSS_chip_temp = parse_data_lst[5]
-                dev_status_bin = "{0:{fill}32b}".format(0, fill='0')
+                status_bit = parse_data_lst[2]
+                dev_status_bin = "{0:{fill}32b}".format(status_bit, fill='0')
                 #PPS status = bit10, 31-10=21
-                pps_status = dev_status_bin[21]
-                if pps_status == '1':
-                    print('1PPS pulse exception ')
-                elif pps_status == '0':
-                    print('PPS normal ')
-                pps_list.append(gps_millisecs)
+                #GNSS data status = bit11
+                #GNSS signal status = bit12
+                pps_list.append(dev_status_bin[21])
+                if pps_list[-1] == '1':
+                    print('1PPS pulse exception ', end=' || ')
+                elif pps_list[-1] == '0':
+                    print('PPS normal ', end=' || ')
+                gnss_data_list.append(dev_status_bin[20])
+                if gnss_data_list[-1] == '1':
+                    print('GNSS chipset has NO data output', end=' || ')
+                elif gnss_data_list[-1] == '0':
+                    print('GNSS data normal', end=' || ')
+                gnss_signal_list.append(dev_status_bin[19])
+                if gnss_signal_list[-1] == '1':
+                    print(' GNSS chipset has data output, but no valid signal detected')
+                elif gnss_signal_list[-1] == '0':
+                    print('GNSS signal normal')
         self.uut.stop_listen_data()
         if len(pps_list) == 0:
             print('no DM packets!')
 
-        pps_error_count = 0
-        for i in range(len(pps_list)):
-            if i == '1':
-                pps_error_count = pps_error_count +1
-            else:
-                continue
+        pps_err_count = pps_list.count('1')
+        gnss_data_err_count = gnss_data_list.count('1')
+        gnss_signal_err_count = gnss_signal_list.count('1')
         
         if len(pps_list) == 0:
             return False, 'no DM packets', 'could capture DM packets'
         else:
-            if pps_error_count > 0:
-                return False, f'amount of error pps status = {pps_error_count}', 'pps status is always 0'
+            if pps_err_count > 0 or gnss_data_err_count or gnss_signal_err_count >0:
+                return False, f'GNSS status error count: PPS error={pps_err_count} gnss data={gnss_data_err_count} gnss signal={gnss_signal_err_count}', 'pps status is always 0'
             else:
-                return True, 'pps status is always 0', 'pps status is always 0'
+                return True, 'GNSS status PPS / GNSS data / GNSS signal is always 0', 'GNSS status is always 0'
+
+    def DM_packet_reasonable_check_status_imu(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_imu.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        master_fail_list = []
+        hw_err_list = []
+        sw_err_list = []
+        config_err_list = []
+        cali_err_list = []
+        accel_deg_err_list = []
+        gyro_deg_err_list = []
+        forced_restart_list = [] 
+        crc_err_list = []
+        tx_overflow_err_list = []
+        self.uut.start_listen_data(0x050a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+22]
+                fmt = '<HIIfff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                imu_status_bit = parse_data_lst[2]
+                dev_status_bin = "{0:{fill}32b}".format(imu_status_bit, fill='0')
+                #Master status = bit0, 31-0=31
+                master_fail_list.append(dev_status_bin[31])
+                hw_err_list.append(dev_status_bin[30])
+                sw_err_list.append(dev_status_bin[29])
+                config_err_list.append(dev_status_bin[28])
+                cali_err_list.append(dev_status_bin[27])
+                accel_deg_err_list.append(dev_status_bin[26])
+                gyro_deg_err_list.append(dev_status_bin[25])
+                forced_restart_list.append(dev_status_bin[24])
+                if forced_restart_list[-1] == '1':
+                    print('forced restart = 1')
+                elif forced_restart_list[-1] == '0':
+                    print('forced restart = 0 normal')
+                crc_err_list.append(dev_status_bin[23])
+                tx_overflow_err_list.append(dev_status_bin[22])
+        self.uut.stop_listen_data()
+        if len(master_fail_list) == 0:
+            print('no DM packets!')
+
+        master_fail_count = master_fail_list.count('1')
+        hw_err_count = hw_err_list.count('1')
+        sw_err_count = sw_err_list.count('1')
+        config_err_count = config_err_list.count('1')
+        cali_err_count = cali_err_list.count('1')
+        accel_deg_err_count = accel_deg_err_list.count('1')
+        gyro_deg_err_count = gyro_deg_err_list.count('1')
+        forced_restart_count = forced_restart_list.count('1')
+        crc_err_count = crc_err_list.count('1')
+        tx_overflow_err_count = tx_overflow_err_list.count('1')
+        
+        count_total = master_fail_count + hw_err_count + sw_err_count + config_err_count + cali_err_count + \
+            accel_deg_err_count + gyro_deg_err_count + forced_restart_count + crc_err_count + tx_overflow_err_count
+
+        if len(master_fail_list) == 0:
+            return False, 'no DM packets', 'could capture DM packets'
+        else:
+            if count_total > 0:
+                return False, f'IMU status error! Master fail={master_fail_count},HW error={hw_err_count}\
+,SW error={sw_err_count},Config error={config_err_count},Calibrarion error={cali_err_count}\
+,Accel degradation={accel_deg_err_count},Gyro degradation ={gyro_deg_err_count}\
+,Forced restart={forced_restart_count},CRC error={crc_err_count}\
+,Tx overflow error={tx_overflow_err_count}', 'IMU status is always 0'
+            else:
+                return True, 'IMU status is always 0', 'IMU status is always 0'
+
+    def DM_packet_reasonable_check_status_operation(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_operation.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        power_list = []
+        mcu_list = []
+        temp_u_mcu_list = []
+        temp_u_sta_list = []
+        temp_u_imu_list = []
+        temp_o_mcu_list = []
+        temp_o_sta_list = []
+        temp_o_imu_list = []
+        self.uut.start_listen_data(0x050a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+22]
+                fmt = '<HIIfff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                imu_status_bit = parse_data_lst[2]
+                dev_status_bin = "{0:{fill}32b}".format(imu_status_bit, fill='0')
+                #Power status = bit13, 31-13=18
+                power_list.append(dev_status_bin[18])
+                mcu_list.append(dev_status_bin[17])
+                temp_u_mcu_list.append(dev_status_bin[16])
+                temp_u_sta_list.append(dev_status_bin[15])
+                temp_u_imu_list.append(dev_status_bin[14])
+                temp_o_mcu_list.append(dev_status_bin[13])
+                temp_o_sta_list.append(dev_status_bin[12])
+                temp_o_imu_list.append(dev_status_bin[11])
+        self.uut.stop_listen_data()
+        if len(power_list) == 0:
+            print('no DM packets!')
+
+        power_count = power_list.count('1')
+        mcu_count = mcu_list.count('1')
+        temp_u_mcu_count = temp_u_mcu_list.count('1')
+        temp_u_sta_count = temp_u_sta_list.count('1')
+        temp_u_imu_count = temp_u_imu_list.count('1')
+        temp_o_mcu_count = temp_o_mcu_list.count('1')
+        temp_o_sta_count = temp_o_sta_list.count('1')
+        temp_o_imu_count = temp_o_imu_list.count('1')
+        
+        count_total = power_count + mcu_count + temp_u_mcu_count + temp_u_mcu_count + temp_u_sta_count \
+            + temp_u_imu_count + temp_o_mcu_count + temp_o_sta_count + temp_o_imu_count
+
+        if len(power_list) == 0:
+            return False, 'no DM packets', 'could capture DM packets'
+        else:
+            if count_total > 0:
+                return False, f'Operation status error! Power fail={power_count},mcu error={mcu_count}\
+,Temperature under MCU flag={temp_u_mcu_count},Temperature under STA flag={temp_u_sta_count},Temperature under IMU flag={temp_u_imu_count}\
+,Temperature over MCU flag={temp_o_mcu_count},Temperature over STA flag ={temp_o_sta_count}\
+,Temperature over IMU flag={temp_o_imu_count}'
+            else:
+                return True, 'IMU status is always 0', 'IMU status is always 0'
+
+    
         
