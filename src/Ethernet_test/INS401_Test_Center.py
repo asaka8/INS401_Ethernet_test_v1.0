@@ -100,6 +100,13 @@ class Test_Environment:
         section9.add_test_case(Code("check IMU status", self.scripts.DM_packet_reasonable_check_status_imu))
         section9.add_test_case(Code("check Operation status", self.scripts.DM_packet_reasonable_check_status_operation))
 
+        section10 = Test_Section("Raw IMU packet reasonable check")
+        self.test_sections.append(section10)
+        section10.add_test_case(Code("check gps week", self.scripts.IMU_data_packet_reasonable_check_week))
+        section10.add_test_case(Code("check gps ms", self.scripts.IMU_data_packet_reasonable_check_ms))
+        section10.add_test_case(Code("check accel", self.scripts.IMU_data_packet_reasonable_check_accel))
+        section10.add_test_case(Code("check accel", self.scripts.IMU_data_packet_reasonable_check_gyro))
+
     def setup_tests_(self):
         '''for update
         '''

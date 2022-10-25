@@ -2,6 +2,7 @@ import os
 import time
 import struct
 import random
+import math
 
 from tqdm import trange
 from ..conmunicator.INS401_Ethernet import Ethernet_Dev
@@ -1108,5 +1109,193 @@ class Test_Scripts:
             else:
                 return True, 'IMU status is always 0', 'IMU status is always 0'
 
-    
-        
+    def IMU_data_packet_reasonable_check_week(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        imu_week_list = []
+        imu_ms_list = []
+        real_time_list = []
+        unmatch_time_count = 0
+        gps_signal_loss = 0
+        self.uut.start_listen_data(0x010a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                real_time = get_curr_time()
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+30]
+                fmt = '<HIffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                imu_week_list.append(parse_data_lst[0])
+                imu_ms_list.append(parse_data_lst[1])
+                real_time_list.append(real_time)
+        self.uut.stop_listen_data()
+        if len(imu_week_list) == 0:
+            print('no Raw IMU packets!')
+
+        for i in range(len(imu_week_list)):
+            if imu_week_list[i] < 2232:
+                gps_signal_loss = gps_signal_loss +1
+            else:
+                gps_sec = gps_time(imu_week_list[i], imu_ms_list[i]/1000)
+                imu_week_list.append(gps_sec)
+                time_diff = cal_time_diff(imu_week_list[i], real_time_list[i])
+                print(f'real time - gps time = {time_diff}')
+                if time_diff > 1 or time_diff < -1:
+                    unmatch_time_count = unmatch_time_count + 1
+
+        if len(imu_week_list) == 0:
+            return False, f'no DM packets', 'could capture DM packets'
+        else:
+            if unmatch_time_count == 0 and gps_signal_loss != len(imu_week_list):
+                return True, f'number of unmatch real time = {unmatch_time_count}, packets have gps time \
+= {len(imu_week_list)-gps_signal_loss}', 'match real time <1s'
+            elif unmatch_time_count == 0 and gps_signal_loss == len(imu_week_list):
+                return False, f'packets have gps time = {len(imu_week_list)-gps_signal_loss}, DM packets \
+= {len(imu_week_list)} ', 'at last one DM packet has GPS time'
+            else:
+                return False, f'number of unmatch real time = {unmatch_time_count}, no gps singal \
+= {gps_signal_loss}', 'match real time, <1s'
+
+    def IMU_data_packet_reasonable_check_ms(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        imu_week_list = []
+        imu_ms_list = []
+        real_time_list = []
+        neighbor_gps_pair = 0
+        gps_signal_loss = 0
+        self.uut.start_listen_data(0x010a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                real_time = get_curr_time()
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+30]
+                fmt = '<HIffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                imu_week_list.append(parse_data_lst[0])
+                imu_ms_list.append(parse_data_lst[1])
+                real_time_list.append(real_time)
+        self.uut.stop_listen_data()
+        if len(imu_week_list) == 0:
+            print('no Raw IMU packets!')
+
+        if len(imu_week_list) >= 2:
+            for i in range(len(imu_week_list)):
+                if i + 1 < len(imu_week_list):
+                    if imu_week_list[i] >= 2232:
+                        if imu_week_list[i+1] >=2232:
+                            time_interval = imu_ms_list[i+1] - imu_ms_list[i]
+                            neighbor_gps_pair = neighbor_gps_pair +1
+                            if time_interval == 1000:
+                                continue
+                            else:
+                                num_interval_err = num_interval_err +1
+                    else:
+                        gps_signal_loss = gps_signal_loss + 1    
+            if imu_week_list[-1] < 2232:
+                gps_signal_loss = gps_signal_loss + 1
+
+        if len(imu_week_list) == 0:
+            return False, f'no Raw IMU packets', 'could capture Raw IMU packets'
+        elif len(imu_week_list) < 2:
+            return False, f'Raw IMU packets = {len(imu_week_list)} ', 'at last need two neighbor Raw IMU packets have GPS time'
+        elif len(imu_week_list) >=2 and neighbor_gps_pair <1:
+            return False, f'Raw IMU packets = {len(imu_week_list)}, packets have gps time \
+= {len(imu_week_list)-gps_signal_loss}, neighbor gps pairs = {neighbor_gps_pair} ', \
+'at last one pair neighbor Raw IMU packets has gps signal'
+        else:
+            return True, f'Raw IMU packets = {len(imu_week_list)}, packets have gps time \
+= {len(imu_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+
+    def IMU_data_packet_reasonable_check_accel(self):
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_accel.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        imu_accel_x_list = []
+        imu_accel_y_list = []
+        imu_accel_z_list = []
+        accel_mod_err_list = []
+        self.uut.start_listen_data(0x010a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+30]
+                fmt = '<HIffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                imu_accel_x_list.append(parse_data_lst[2])
+                imu_accel_y_list.append(parse_data_lst[3])
+                imu_accel_z_list.append(parse_data_lst[4])
+        self.uut.stop_listen_data()
+        if len(imu_accel_x_list) == 0:
+            print('no Raw IMU packets!')
+
+        for i in range(len(imu_accel_x_list)):
+            s2 = math.pow(imu_accel_x_list[i],2) + math.pow(imu_accel_y_list[i],2) + math.pow(imu_accel_z_list[i],2)
+            accel_mod_value = math.pow(s2, 1/2)
+            #accel_mod_value = abs(imu_accel_x_list[i]) + abs(imu_accel_y_list[i]) + abs(imu_accel_z_list[i])
+            if 9.7 < abs(accel_mod_value) < 9.9:
+                continue
+            else:
+                print(imu_accel_x_list[i],imu_accel_y_list[i],imu_accel_z_list[i])
+                accel_mod_err_list.append([imu_accel_x_list[i],imu_accel_y_list[i],imu_accel_z_list[i]])
+
+        if len(imu_accel_x_list) == 0:
+            return False, f'no Raw IMU packets', 'could capture Raw IMU packets'
+        elif len(accel_mod_err_list) > 0:
+            return False, f'accel mode is not 1g, err count={len(accel_mod_err_list)},total packets={len(imu_accel_x_list)}', 'accel of module is about 1g'
+        else:
+            return True, f'accel mode = 1g,total packets={len(imu_accel_x_list)}', 'accel of module is about 1g'
+
+    def IMU_data_packet_reasonable_check_gyro(self):
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_accel.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+ 
+        imu_gyro_x_list = []
+        imu_gyro_y_list = []
+        imu_gyro_z_list = []
+        imu_gyro_err_list = []
+        self.uut.start_listen_data(0x010a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+30]
+                fmt = '<HIffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                imu_gyro_x_list.append(parse_data_lst[5])
+                imu_gyro_y_list.append(parse_data_lst[6])
+                imu_gyro_z_list.append(parse_data_lst[7])
+        self.uut.stop_listen_data()
+        if len(imu_gyro_x_list) == 0:
+            print('no Raw IMU packets!')
+
+        for i in range(len(imu_gyro_x_list)):
+            if abs(imu_gyro_x_list[i])<5 and abs(imu_gyro_y_list[i])<5 and abs(imu_gyro_z_list[i])<5:
+                continue
+            else:
+                print(imu_gyro_x_list[i], imu_gyro_y_list[i], imu_gyro_z_list[i])
+                imu_gyro_err_list.append([imu_gyro_x_list[i], imu_gyro_y_list[i], imu_gyro_z_list[i]])
+
+        if len(imu_gyro_x_list) == 0:
+            return False, f'no Raw IMU packets', 'could capture Raw IMU packets'
+        elif len(imu_gyro_err_list) > 0:
+            return False, f'gyro is above 5 degree/s, error count={len(imu_gyro_err_list)} ', 'gyro of each axis is below 5 degree/s'
+        else:
+            return True, f'gyro of each axis is below 5 degree/s', 'gyro of each axis is below 5 degree/s'
