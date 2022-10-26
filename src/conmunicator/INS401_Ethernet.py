@@ -144,9 +144,12 @@ class Ethernet_Dev:
         hard_code_mac = '04:00:00:00:00:04'
         if filter_type == None:
             filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac} '
-        else:
+        elif isinstance(filter_type, int):
             filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac}  and ether[16:2] == {filter_type}'
-        
+        elif isinstance(filter_type, list):
+            filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac}  and ether[16:2] == {filter_type[0]}'
+            for i in range(len(filter_type)-1):
+                filter_exp += f' || ether[16:2] == {filter_type[i+1]}'
         if log2pcap == False:
             self.async_sniffer = AsyncSniffer(
                 iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
