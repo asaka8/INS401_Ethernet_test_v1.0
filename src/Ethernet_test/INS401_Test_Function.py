@@ -430,12 +430,12 @@ class Test_Scripts:
 
     def long_term_test_setup(self):
         longterm_run_time = self.properties["long term test"]["LONGTERM_RUNNING_TIME"]
-        fliter_type = self.properties["long term test"]["TypeFliter"]
+        filter_type = self.properties["long term test"]["TypeFilter"]
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin' 
         # logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.pcap' 
         self.test_log.cerat_binf_sct5(logf_name)
         start_time = time.time()
-        self.uut.start_listen_data(fliter_type)
+        self.uut.start_listen_data(filter_type)
         self.uut.reset_buffer()    
         self.tlock.acquire()    
         while time.time() - start_time <= longterm_run_time:

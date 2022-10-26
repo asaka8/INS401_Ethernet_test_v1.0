@@ -22,7 +22,7 @@ class Test_Environment:
             self.values.append(value)
 
     # Add test scetions & test scripts here
-    def setup_tests(self):
+    def setup_tests_(self):
         section1 = Test_Section("User command test")
         self.test_sections.append(section1)
         section1.add_test_case(Code("Get production test",  self.scripts.get_production_info))
@@ -107,7 +107,7 @@ class Test_Environment:
         section10.add_test_case(Code("check accel", self.scripts.IMU_data_packet_reasonable_check_accel))
         section10.add_test_case(Code("check accel", self.scripts.IMU_data_packet_reasonable_check_gyro))
 
-    def setup_tests_(self):
+    def setup_tests(self):
         '''for update
         '''
         section5 = Test_Section("Longterm Test")
