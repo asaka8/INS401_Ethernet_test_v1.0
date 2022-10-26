@@ -3,6 +3,7 @@ import time
 import struct
 import random
 import math
+import threading 
 
 from tqdm import trange
 from ..conmunicator.INS401_Ethernet import Ethernet_Dev
@@ -23,6 +24,7 @@ class Test_Scripts:
     def __init__(self, device):
         self.eth = Ethernet_Dev()
         Test_Scripts.uut = device
+        self.tlock = threading.Lock()
         self.product_sn = None
         self.test_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
         jsonf = Json_Creat()
@@ -428,16 +430,19 @@ class Test_Scripts:
 
     def long_term_test_setup(self):
         longterm_run_time = self.properties["long term test"]["LONGTERM_RUNNING_TIME"]
+        fliter_type = self.properties["long term test"]["TypeFliter"]
         logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.bin' 
         # logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.pcap' 
         self.test_log.cerat_binf_sct5(logf_name)
         start_time = time.time()
-        self.uut.start_listen_data()
-        self.uut.reset_buffer()        
+        self.uut.start_listen_data(fliter_type)
+        self.uut.reset_buffer()    
+        self.tlock.acquire()    
         while time.time() - start_time <= longterm_run_time:
             data = self.uut.read_data()
             self.test_log.write2bin(data)
             # self.test_log.write2pcap(data, logf_name)
+        self.tlock.release()
         self.uut.stop_listen_data()
         if self.uut.check_len() != 0:
             while True:
