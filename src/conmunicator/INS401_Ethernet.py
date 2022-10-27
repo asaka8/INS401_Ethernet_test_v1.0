@@ -160,6 +160,26 @@ class Ethernet_Dev:
         self.async_sniffer.start()
         time.sleep(0.1)
 
+    def start_listen_data_nmea(self, filter_type=None, log2pcap=False):
+        hard_code_mac = '04:00:00:00:00:04'
+        if filter_type == None:
+            filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac} '
+        elif isinstance(filter_type, int):
+            filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac}  and ether[17:2] == {filter_type}'
+        elif isinstance(filter_type, list):
+            filter_exp = f'ether src host {self.dst_mac} or {hard_code_mac}  and ether[17:2] == {filter_type[0]}'
+            for i in range(len(filter_type)-1):
+                filter_exp += f' || ether[17:2] == {filter_type[i+1]}'
+        if log2pcap == False:
+            self.async_sniffer = AsyncSniffer(
+                iface=self.iface, prn=self.handle_catch_packet, filter=filter_exp, store=0)
+        elif log2pcap == True:
+            self.async_sniffer = AsyncSniffer(
+                iface=self.iface, prn=self.handle_catch_whole_eth_packet, filter=filter_exp, store=0)
+        self.tlock.acquire()
+        self.async_sniffer.start()
+        time.sleep(0.1)
+
     def stop_listen_data(self):
         self.async_sniffer.stop()
         self.tlock.release()

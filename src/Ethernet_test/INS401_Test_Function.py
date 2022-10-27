@@ -1310,3 +1310,86 @@ class Test_Scripts:
             return False, f'gyro is above 5 degree/s, error count={len(imu_gyro_err_list)} ', 'gyro of each axis is below 5 degree/s'
         else:
             return True, f'gyro of each axis is below 5 degree/s', 'gyro of each axis is below 5 degree/s'
+
+    def NMEA_GNGGA_data_packet_check_ID_GNGGA(self):
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_ID.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        gngga_id_list = []
+        gngga_id_err_list = []
+        self.uut.start_listen_data_nmea(0x4747)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = str(data[0:82], 'utf-8')
+                gngga_list = parse_data.split(",")
+                gngga_id_list.append(gngga_list[0])
+        self.uut.stop_listen_data()
+        if len(gngga_id_list) == 0:
+            print('no NMEA GNGGA packets!')
+
+        for id in gngga_id_list:
+            if id == "$GNGGA":
+                continue
+            else:
+                gngga_id_err_list.append(id)
+
+        if len(gngga_id_list) == 0:
+            return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
+        elif len(gngga_id_err_list) > 0:
+            return False, f'nmea data do not include GNGGA, error count={len(gngga_id_err_list)} ', 'all nmea data include GNGGA'
+        else:
+            return True, f'all nmea data include GNGGA', 'all nmea data include GNGGA'
+
+    def NMEA_GNGGA_data_packet_check_utc_time(self):
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_UTC_time.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        gngga_utc_list = []
+        gngga_utc_err_list = []
+        real_time_list = []
+        unmatch_time_list = []
+        self.uut.start_listen_data_nmea(0x4747)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                real_time = get_curr_time()
+                self.test_log.write2bin(data)
+                parse_data = str(data[0:82], 'utf-8')
+                gngga_list = parse_data.split(",")
+                gngga_utc_list.append(gngga_list[1])
+                real_time_list.append(real_time)
+        self.uut.stop_listen_data()
+        if len(gngga_utc_list) == 0:
+            print('no NMEA GNGGA packets!')
+
+        for i in range(len(gngga_utc_list)):
+            print(gngga_utc_list[i])
+            hour = int(gngga_utc_list[i][0:2])
+            minute = int(gngga_utc_list[i][2:4])
+            second = int(gngga_utc_list[i][4:6])
+            ms = int(gngga_utc_list[i][7:9])
+            hour_real = real_time_list[i].hour
+            minute_real = real_time_list[i].minute
+            second_real = real_time_list[i].second
+            microsec_real = real_time_list[i].microsecond
+            time_diff = (second_real*1000+microsec_real/1000)-(second*1000+ms*100)
+            if minute_real == minute:
+                if abs(time_diff) < 1000:
+                    continue
+                else:
+                    unmatch_time_list.append(gngga_list[i])
+            else:
+                unmatch_time_list.append(gngga_utc_list[i])
+
+        if len(gngga_utc_list) == 0:
+            return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
+        elif len(unmatch_time_list) > 0:
+            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/{len(gngga_utc_list)}', 'UTC time in GNGGA matchs the real time '
+        else:
+            return True, f'UTC time in GNGGA matchs the real time', 'UTC time in GNGGA matchs the real time'
