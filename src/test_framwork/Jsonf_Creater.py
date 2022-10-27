@@ -89,6 +89,15 @@ JSON_DATA = {
         "LONGTERM_RUNNING_COUNT": 10000,
         "LONGTERM_RUNNING_TIME": 180,
         "TypeFilter": [0x010a, 0x020a, 0x030a, 0x050a]
+    },
+    "NMEA":{
+        "latitude": 31.494,
+        "latitude_dev": 0.005,
+        "latitude_dir": 'N',
+        "longitude": 120.362,
+        "longitude_dev": 0.005,
+        "longitude_dir": 'E',
+        "position type": 4
     }
     }
 

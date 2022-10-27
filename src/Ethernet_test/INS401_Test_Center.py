@@ -111,6 +111,9 @@ class Test_Environment:
         self.test_sections.append(section11)
         section11.add_test_case(Code("check ID GNGGA", self.scripts.NMEA_GNGGA_data_packet_check_ID_GNGGA))
         section11.add_test_case(Code("check UTC time", self.scripts.NMEA_GNGGA_data_packet_check_utc_time))
+        section11.add_test_case(Code("check latitude", self.scripts.NMEA_GNGGA_data_packet_check_latitude))
+        section11.add_test_case(Code("check longitude", self.scripts.NMEA_GNGGA_data_packet_check_longitude))
+        section11.add_test_case(Code("check position type", self.scripts.NMEA_GNGGA_data_packet_check_position_type))
 
     def setup_tests(self):
         '''for update
