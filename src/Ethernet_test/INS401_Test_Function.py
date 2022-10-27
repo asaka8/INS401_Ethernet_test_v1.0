@@ -778,8 +778,8 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_week(self):
         result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -827,8 +827,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_time_ms(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -877,8 +877,8 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_temp(self):
         #result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_temp.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_temp.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         temp_list = []
         self.uut.start_listen_data(0x050a)
@@ -927,8 +927,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_status_gnss(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_gnss.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_status_gnss.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         pps_list = []
         gnss_data_list = []
@@ -982,8 +982,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_status_imu(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_imu.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_status_imu.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         master_fail_list = []
         hw_err_list = []
@@ -1055,8 +1055,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_status_operation(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_operation.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_status_operation.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         power_list = []
         mcu_list = []
