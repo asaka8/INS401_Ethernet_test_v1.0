@@ -1117,11 +1117,12 @@ class Test_Scripts:
     def IMU_data_packet_reasonable_check_week(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         imu_week_list = []
         imu_ms_list = []
+        imu_gps_time = []
         real_time_list = []
         unmatch_time_count = 0
         gps_signal_loss = 0
@@ -1148,9 +1149,9 @@ class Test_Scripts:
                 gps_signal_loss = gps_signal_loss +1
             else:
                 gps_sec = gps_time(imu_week_list[i], imu_ms_list[i]/1000)
-                imu_week_list.append(gps_sec)
-                time_diff = cal_time_diff(imu_week_list[i], real_time_list[i])
-                print(f'real time - gps time = {time_diff}')
+                imu_gps_time.append(gps_sec)
+                time_diff = cal_time_diff(gps_sec, real_time_list[i])
+                #print(f'real time - gps time = {time_diff}')
                 if time_diff > 1 or time_diff < -1:
                     unmatch_time_count = unmatch_time_count + 1
 
@@ -1170,14 +1171,15 @@ class Test_Scripts:
     def IMU_data_packet_reasonable_check_ms(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         imu_week_list = []
         imu_ms_list = []
         real_time_list = []
         neighbor_gps_pair = 0
         gps_signal_loss = 0
+        num_interval_err = 0
         self.uut.start_listen_data(0x010a)
         start_time = time.time()
         self.uut.reset_buffer()
@@ -1203,7 +1205,7 @@ class Test_Scripts:
                         if imu_week_list[i+1] >=2232:
                             time_interval = imu_ms_list[i+1] - imu_ms_list[i]
                             neighbor_gps_pair = neighbor_gps_pair +1
-                            if time_interval == 1000:
+                            if time_interval == 10: #IMU 100pkts/Sec, interval=10ms
                                 continue
                             else:
                                 num_interval_err = num_interval_err +1
@@ -1215,18 +1217,22 @@ class Test_Scripts:
         if len(imu_week_list) == 0:
             return False, f'no Raw IMU packets', 'could capture Raw IMU packets'
         elif len(imu_week_list) < 2:
-            return False, f'Raw IMU packets = {len(imu_week_list)} ', 'at last need two neighbor Raw IMU packets have GPS time'
+            return False, f'Raw IMU packets = {len(imu_week_list)} ', 'at last need two Raw IMU packets have GPS time'
         elif len(imu_week_list) >=2 and neighbor_gps_pair <1:
             return False, f'Raw IMU packets = {len(imu_week_list)}, packets have gps time \
 = {len(imu_week_list)-gps_signal_loss}, neighbor gps pairs = {neighbor_gps_pair} ', \
 'at last one pair neighbor Raw IMU packets has gps signal'
         else:
-            return True, f'Raw IMU packets = {len(imu_week_list)}, packets have gps time \
-= {len(imu_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+            if num_interval_err > 0:
+                return False, f'Raw IMU packets = {len(imu_week_list)}, packets have gps time \
+= {len(imu_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair}, interval error = {num_interval_err} ', 'interval is not 1000ms'
+            else:
+                return True, f'Raw IMU packets = {len(imu_week_list)}, packets have gps time \
+= {len(imu_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair}, interval error = {num_interval_err} ', 'interval = 1000ms'
 
     def IMU_data_packet_reasonable_check_accel(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_accel.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_accel.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         imu_accel_x_list = []
         imu_accel_y_list = []
@@ -1267,8 +1273,8 @@ class Test_Scripts:
             return True, f'accel mode = 1g,total packets={len(imu_accel_x_list)}', 'accel of module is about 1g'
 
     def IMU_data_packet_reasonable_check_gyro(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_accel.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_gyro.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
         imu_gyro_x_list = []
         imu_gyro_y_list = []
