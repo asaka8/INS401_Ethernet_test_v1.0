@@ -1326,19 +1326,25 @@ class Test_Scripts:
             if data is not None:
                 self.test_log.write2bin(data)
                 parse_data = str(data[0:82], 'utf-8')
-                gngga_list = parse_data.split(",")
-                gngga_id_list.append(gngga_list[0])
+                parse_data = str(data[0:37], 'utf-8')
+                gngga_list.append(parse_data)
+                #print(parse_data)
         self.uut.stop_listen_data()
-        if len(gngga_id_list) == 0:
-            print('no NMEA GNGGA packets!')
+        if len(gngga_list) == 0:
+            print('no NMEA GNZDA packets!')
 
-        for id in gngga_id_list:
-            if id == "$GNGGA":
-                continue
+        for i in range(len(gngga_list)):
+            gngga_talker = get_talker(gngga_list[i])
+            gngga_sentence_type = get_sentence_type(gngga_list[i])
+            if gngga_talker == 'GN':
+                if gngga_sentence_type == 'GGA':
+                    continue
+                else:
+                    gngga_id_err_list.append(gngga_list[i])
             else:
-                gngga_id_err_list.append(id)
+                gngga_id_err_list.append(gngga_list[i])
 
-        if len(gngga_id_list) == 0:
+        if len(gngga_list) == 0:
             return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
         elif len(gngga_id_err_list) > 0:
             return False, f'nmea data do not include GNGGA, error count={len(gngga_id_err_list)} ', 'all nmea data include GNGGA'
