@@ -93,8 +93,8 @@ class Test_Environment:
 
         section9 = Test_Section("DM packet reasonable check")
         self.test_sections.append(section9)
-        section9.add_test_case(Code("week", self.scripts.DM_packet_reasonable_check_week))
-        section9.add_test_case(Code("time ms", self.scripts.DM_packet_reasonable_check_time_ms))
+        section9.add_test_case(Code("check gps week", self.scripts.DM_packet_reasonable_check_week))
+        section9.add_test_case(Code("check gps ms", self.scripts.DM_packet_reasonable_check_time_ms))
         section9.add_test_case(Code("check temperature", self.scripts.DM_packet_reasonable_check_temp))
         section9.add_test_case(Code("check GNSS status", self.scripts.DM_packet_reasonable_check_status_gnss))
         section9.add_test_case(Code("check IMU status", self.scripts.DM_packet_reasonable_check_status_imu))
@@ -105,7 +105,7 @@ class Test_Environment:
         section10.add_test_case(Code("check gps week", self.scripts.IMU_data_packet_reasonable_check_week))
         section10.add_test_case(Code("check gps ms", self.scripts.IMU_data_packet_reasonable_check_ms))
         section10.add_test_case(Code("check accel", self.scripts.IMU_data_packet_reasonable_check_accel))
-        section10.add_test_case(Code("check accel", self.scripts.IMU_data_packet_reasonable_check_gyro))
+        section10.add_test_case(Code("check gyro", self.scripts.IMU_data_packet_reasonable_check_gyro))
 
         section11 = Test_Section("NMEA-GNGGA check")
         self.test_sections.append(section11)
@@ -114,6 +114,14 @@ class Test_Environment:
         section11.add_test_case(Code("check latitude", self.scripts.NMEA_GNGGA_data_packet_check_latitude))
         section11.add_test_case(Code("check longitude", self.scripts.NMEA_GNGGA_data_packet_check_longitude))
         section11.add_test_case(Code("check position type", self.scripts.NMEA_GNGGA_data_packet_check_position_type))
+
+        section12 = Test_Section("NMEA-GNZDA check")
+        self.test_sections.append(section12)
+        section12.add_test_case(Code("check ID GNZDA", self.scripts.NMEA_GNZDA_data_packet_check_ID_GNZDA))
+        section12.add_test_case(Code("check UTC time", self.scripts.NMEA_GNZDA_data_packet_check_utc_time))
+        section12.add_test_case(Code("check latitude", self.scripts.NMEA_GNZDA_data_packet_check_latitude))
+        section12.add_test_case(Code("check longitude", self.scripts.NMEA_GNZDA_data_packet_check_longitude))
+        section12.add_test_case(Code("check position type", self.scripts.NMEA_GNZDA_data_packet_check_position_type))
 
     def setup_tests(self):
         '''for update
