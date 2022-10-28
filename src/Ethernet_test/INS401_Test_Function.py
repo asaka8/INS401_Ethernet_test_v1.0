@@ -1558,8 +1558,7 @@ class Test_Scripts:
         logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNZDA_UTC_time.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
  
-        gngga_utc_list = []
-        gngga_utc_err_list = []
+        gngga_list = []
         real_time_list = []
         unmatch_time_list = []
         self.uut.start_listen_data_nmea(0x5a44)
@@ -1570,151 +1569,30 @@ class Test_Scripts:
             if data is not None:
                 real_time = get_curr_time()
                 self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
-                gngga_list = parse_data.split(",")
-                gngga_utc_list.append(gngga_list[1])
+                parse_data = str(data[0:37], 'utf-8')
+                #gngga_list = parse_data.split(",")
+                #gngga_utc_list.append(gngga_list[1])
+                gngga_list.append(parse_data)
                 real_time_list.append(real_time)
         self.uut.stop_listen_data()
-        if len(gngga_utc_list) == 0:
-            print('no NMEA GNZDA packets!')
-
-        for i in range(len(gngga_utc_list)):
-            #print(gngga_utc_list[i])
-            hour = int(gngga_utc_list[i][0:2])
-            minute = int(gngga_utc_list[i][2:4])
-            second = int(gngga_utc_list[i][4:6])
-            ms = int(gngga_utc_list[i][7:9])
-            hour_real = real_time_list[i].hour
-            minute_real = real_time_list[i].minute
-            second_real = real_time_list[i].second
-            microsec_real = real_time_list[i].microsecond
-            time_diff = (second_real*1000+microsec_real/1000)-(second*1000+ms*100)
-            if minute_real == minute:
-                if abs(time_diff) < 1000:
-                    continue
-                else:
-                    unmatch_time_list.append(gngga_list[i])
-            else:
-                unmatch_time_list.append(gngga_utc_list[i])
-
-        if len(gngga_utc_list) == 0:
-            return False, f'no NMEA GNZDA packets!', 'could capture NMEA GNZDA packets'
-        elif len(unmatch_time_list) > 0:
-            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/{len(gngga_utc_list)}', 'UTC time in GNZDA matchs the real time '
-        else:
-            return True, f'UTC time in GNZDA matchs the real time', 'UTC time in GNZDA matchs the real time'
-
-    def NMEA_GNZDA_data_packet_check_latitude(self):
-        gngga_lat_p = self.properties["NMEA"]["latitude"]
-        gngga_lat_dev_p = self.properties["NMEA"]["latitude_dev"]
-        gngga_lat_dir_p = self.properties["NMEA"]["latitude_dir"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNZDA_latitude.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
- 
-        gngga_list = []
-        unmatch_lat_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
-                gngga_list.append(parse_data)
-        self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNZDA packets!')
 
         for i in range(len(gngga_list)):
-            gngga_lat, gngga_lat_dir = get_latitude(gngga_list[i])
-            #print(gngga_lat, gngga_lat_dir)
-            if gngga_lat_dir == gngga_lat_dir_p:
-                if abs(gngga_lat-gngga_lat_p) < gngga_lat_dev_p:
-                    continue
-                else:
-                    unmatch_lat_list.append([gngga_lat, gngga_lat_dir])
-            else:
-                unmatch_lat_list.append([gngga_lat, gngga_lat_dir])
-
-        if len(gngga_list) == 0:
-            return False, f'no NMEA GNZDA packets!', 'could capture NMEA GNZDA packets'
-        elif len(unmatch_lat_list) > 0:
-            return False, f'latitude not within a reasonable range, unmatch count={len(unmatch_lat_list)}/{len(gngga_list)}', 'latitude in GNZDA within a reasonable range'
-        else:
-            return True, f'latitude in GNZDA within a reasonable range', 'latitude in GNZDA within a reasonable range'
-
-    def NMEA_GNZDA_data_packet_check_longitude(self):
-        gngga_lon_p = self.properties["NMEA"]["longitude"]
-        gngga_lon_dev_p = self.properties["NMEA"]["longitude_dev"]
-        gngga_lon_dir_p = self.properties["NMEA"]["longitude_dir"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNZDA_longitude.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
- 
-        gngga_list = []
-        unmatch_lat_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
-                gngga_list.append(parse_data)
-        self.uut.stop_listen_data()
-        if len(gngga_list) == 0:
-            print('no NMEA GNZDA packets!')
-
-        for i in range(len(gngga_list)):
-            gngga_lon, gngga_lon_dir = get_longitude(gngga_list[i])
-            #print(gngga_lon, gngga_lon_dir)
-            if gngga_lon_dir == gngga_lon_dir_p:
-                if abs(gngga_lon-gngga_lon_p) < gngga_lon_dev_p:
-                    continue
-                else:
-                    unmatch_lat_list.append([gngga_lon, gngga_lon_dir])
-            else:
-                unmatch_lat_list.append([gngga_lon, gngga_lon_dir])
-
-        if len(gngga_list) == 0:
-            return False, f'no NMEA GNZDA packets!', 'could capture NMEA GNZDA packets'
-        elif len(unmatch_lat_list) > 0:
-            return False, f'longitude not within a reasonable range, unmatch count={len(unmatch_lat_list)}/{len(gngga_list)}', 'longitude in GNZDA within a reasonable range'
-        else:
-            return True, f'longitude in GNZDA within a reasonable range', 'longitude in GNZDA within a reasonable range'
-
-    def NMEA_GNZDA_data_packet_check_position_type(self):
-        position_type_p = self.properties["NMEA"]["position type"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNZDA_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
- 
-        gngga_list = []
-        unmatch_pos_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
-                gngga_list.append(parse_data)
-        self.uut.stop_listen_data()
-        if len(gngga_list) == 0:
-            print('no NMEA GNZDA packets!')
-
-        for i in range(len(gngga_list)):
-            gngga_position_type = get_position_type(gngga_list[i])
-            #print(gngga_position_type)
-            if gngga_position_type == position_type_p:
+            datetime_zda = get_zda_utc(gngga_list[i])
+            #print(f'gnzda utc = {datetime_zda}')
+            time_now = real_time_list[i]
+            #print(f'local time = {time_now}')
+            time_diff = float(time_now.timestamp()) - datetime_zda.timestamp()
+            #print(time_diff)
+            if -1 < time_diff < 1:
                 continue
             else:
-                unmatch_pos_list.append(gngga_position_type)
+                unmatch_time_list.append(gngga_list[i])
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNZDA packets!', 'could capture NMEA GNZDA packets'
-        elif len(unmatch_pos_list) > 0:
-            return False, f'position type can not converges to 4, unmatch count={len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNZDA can converges to 4'
+        elif len(unmatch_time_list) > 0:
+            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/{len(gngga_list)}', 'UTC time in GNZDA matchs the real time '
         else:
-            return True, f'position type in GNZDA can converges to 4', 'position type in GNZDA can converges to 4(RTK_fixed)'
+            return True, f'UTC time in GNZDA matchs the real time', 'UTC time in GNZDA matchs the real time'
