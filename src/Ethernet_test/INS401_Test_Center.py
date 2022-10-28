@@ -91,6 +91,11 @@ class Test_Environment:
         section6.add_test_case(Condition_Check("VF36 vehicle code setting params test", self.scripts.vehicle_code_params_test, self.paramIds[13], [0x56, 0x46, 0x33, 0x36]))
         section6.add_test_case(Condition_Check_dlc("vehicle table version test", self.scripts.vehicle_table_version_test, self.properties["vehicle code"]["vcode version"]))
 
+        section7 = Test_Section("GNSS packet reasonable check")
+        self.test_sections.append(section7)
+        section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_week))
+        section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_time_ms))
+
         section9 = Test_Section("DM packet reasonable check")
         self.test_sections.append(section9)
         section9.add_test_case(Code("check gps week", self.scripts.DM_packet_reasonable_check_week))

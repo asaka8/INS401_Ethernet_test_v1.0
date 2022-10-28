@@ -777,6 +777,105 @@ class Test_Scripts:
         else:
             return False, f'vehicle table version: {except_ver}', f'vehicle table version: {vcode_ver}'
 
+    def GNSS_packet_reasonable_check_week(self):
+        result = False
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        gps_week_list = []
+        gps_ms_list = []
+        gps_secs_lst = []
+        real_time_list = []
+        unmatch_time_count = 0
+        gps_signal_loss = 0
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                real_time = get_curr_time()
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_week_list.append(parse_data_lst[0])
+                gps_ms_list.append(parse_data_lst[1])
+                real_time_list.append(real_time)
+        self.uut.stop_listen_data()
+        
+        for i in range(len(gps_week_list)):
+            if gps_week_list[i] < 2232:
+                gps_signal_loss = gps_signal_loss +1
+            else:
+                gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
+                gps_secs_lst.append(gps_sec)
+                time_diff = cal_time_diff(gps_secs_lst[i], real_time_list[i])
+                print(f'real time - gps time = {time_diff}')
+                if time_diff > 1 or time_diff < -1:
+                    unmatch_time_count = unmatch_time_count + 1
+
+        if len(gps_week_list) == 0:
+            return False, f'no GNSS packets', 'could capture GNSS packets'
+        else:
+            if unmatch_time_count == 0 and gps_signal_loss != len(gps_week_list):
+                return True, f'number of unmatch real time = {unmatch_time_count}, packets have GNSS time = {len(gps_week_list)-gps_signal_loss}', 'match real time <1s'
+            elif unmatch_time_count == 0 and gps_signal_loss == len(gps_week_list):
+                return False, f'packets have GNSS time = {len(gps_week_list)-gps_signal_loss}, GNSS packets = {len(gps_week_list)} ', 'at last one GNSS packet has GPS time'
+            else:
+                return False, f'number of unmatch real time = {unmatch_time_count}, no GNSS singal = {gps_signal_loss}', 'match real time, <1s'
+
+    def GNSS_packet_reasonable_check_time_ms(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        gps_week_list = []
+        gps_ms_list = []
+        gps_millisecs_lst = []
+        gps_signal_loss = 0
+        num_interval_err = 0
+        neighbor_gps_pair = 0
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_week_list.append(parse_data_lst[0])
+                gps_ms_list.append(parse_data_lst[1])
+        self.uut.stop_listen_data()
+
+        if len(gps_week_list) >= 2:
+            for i in range(len(gps_week_list)):
+                if i + 1 < len(gps_week_list):
+                    if gps_week_list[i] >= 2232:
+                        if gps_week_list[i+1] >=2232:
+                            time_interval = gps_ms_list[i+1] - gps_ms_list[i]
+                            neighbor_gps_pair = neighbor_gps_pair +1
+                            if time_interval == 1000:
+                                continue
+                            else:
+                                num_interval_err = num_interval_err +1
+                    else:
+                        gps_signal_loss = gps_signal_loss + 1    
+            if gps_week_list[-1] < 2232:
+                gps_signal_loss = gps_signal_loss + 1
+
+        if len(gps_week_list) == 0:
+            return False, f'no GNSS packets', 'could capture GNSS packets'
+        elif len(gps_week_list) < 2:
+            return False, f'GNSS packets = {len(gps_week_list)} ', 'at last need two neighbor DM packets have GPS time'
+        elif len(gps_week_list) >=2 and neighbor_gps_pair <1:
+            return False, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pairs = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+        else:
+            return True, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+
     def DM_packet_reasonable_check_week(self):
         result = False
         logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_week.bin'
