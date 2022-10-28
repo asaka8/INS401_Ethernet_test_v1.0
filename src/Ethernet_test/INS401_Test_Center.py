@@ -95,6 +95,9 @@ class Test_Environment:
         self.test_sections.append(section7)
         section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_week))
         section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_time_ms))
+        section7.add_test_case(Code("check position type", self.scripts.GNSS_packet_reasonable_check_position_type))
+        section7.add_test_case(Code("check number of satellites", self.scripts.GNSS_packet_reasonable_check_satellites))
+        section7.add_test_case(Code("check latitude and longitude", self.scripts.GNSS_packet_reasonable_check_latlongitude))
 
         section9 = Test_Section("DM packet reasonable check")
         self.test_sections.append(section9)

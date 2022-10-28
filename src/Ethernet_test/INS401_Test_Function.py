@@ -876,6 +876,113 @@ class Test_Scripts:
         else:
             return True, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
 
+    def GNSS_packet_reasonable_check_position_type(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_position_type.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        pos_list = []
+        pos_err_list = []
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                pos_list.append(parse_data_lst[2])
+        self.uut.stop_listen_data()
+
+        for i in range(len(pos_list)):
+            if pos_list[i] == 4:
+                continue
+            else:
+                pos_err_list.append(pos_list[i])
+
+        if len(pos_list) == 0:
+            return False, f'no GNSS packets', 'could capture GNSS packets'
+        else:
+            if len(pos_err_list) > 0:
+                return False, f'position type can not converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+            else:
+                return True, f'position type can converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+
+    def GNSS_packet_reasonable_check_satellites(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_satellites.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        sat_list = []
+        sat_err_list = []
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                sat_list.append(parse_data_lst[9])
+                #print(parse_data_lst[9], parse_data_lst[10])
+        self.uut.stop_listen_data()
+
+        for i in range(len(sat_list)):
+            if sat_list[i] >= 16:
+                continue
+            else:
+                sat_err_list.append(sat_list[i])
+
+        if len(sat_list) == 0:
+            return False, f'no GNSS packets', 'could capture GNSS packets'
+        else:
+            if len(sat_err_list) > 0:
+                return False, f'number of satellites >= 16:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'number of satellites is not zero and >= 16 '
+            else:
+                return True, f'number of satellites >= 16:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'number of satellites is not zero and >= 16 '
+
+    def GNSS_packet_reasonable_check_latlongitude(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_lat_lon.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        sat_list = []
+        sat_err_list = []
+        self.uut.start_listen_data(0x020a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+77]
+                fmt = '<HIBdddfffBBffffffff'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                sat_list.append([parse_data_lst[3], parse_data_lst[4]])
+                print(parse_data_lst[3], parse_data_lst[4])
+        self.uut.stop_listen_data()
+
+        for i in range(len(sat_list)):
+            if 31.116666666667<sat_list[i][0]<32.033333333333 and 119.55<sat_list[i][1]<120.63333333333:
+                continue
+            else:
+                sat_err_list.append(sat_list[i])
+
+        if len(sat_list) == 0:
+            return False, f'no GNSS packets', 'could capture GNSS packets'
+        else:
+            if len(sat_err_list) > 0:
+                return False, f'The location point in Wuxi:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'The location point in Wuxi '
+            else:
+                return True, f'The location point in Wuxi:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'The location point in Wuxi '
+
     def DM_packet_reasonable_check_week(self):
         result = False
         logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_week.bin'
