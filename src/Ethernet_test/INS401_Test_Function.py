@@ -779,8 +779,8 @@ class Test_Scripts:
 
     def GNSS_packet_reasonable_check_week(self):
         result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -828,8 +828,8 @@ class Test_Scripts:
     def GNSS_packet_reasonable_check_time_ms(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -879,8 +879,8 @@ class Test_Scripts:
     def GNSS_packet_reasonable_check_position_type(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_position_type.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         pos_list = []
         pos_err_list = []
@@ -914,8 +914,8 @@ class Test_Scripts:
     def GNSS_packet_reasonable_check_satellites(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_satellites.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_satellites.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         sat_list = []
         sat_err_list = []
@@ -950,8 +950,8 @@ class Test_Scripts:
     def GNSS_packet_reasonable_check_latlongitude(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/GNSS_packet_lat_lon.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_lat_lon.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         sat_list = []
         sat_err_list = []
@@ -985,8 +985,8 @@ class Test_Scripts:
 
     def INS_packet_reasonable_check_week(self):
         result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -1034,8 +1034,8 @@ class Test_Scripts:
     def INS_packet_reasonable_check_time_ms(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -1085,8 +1085,8 @@ class Test_Scripts:
     def INS_packet_reasonable_check_position_type(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_position_type.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         pos_list = []
         pos_err_list = []
@@ -1120,8 +1120,8 @@ class Test_Scripts:
     def INS_packet_reasonable_check_status(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_status.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_status.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         pos_list = []
         pos_err_list = []
@@ -1155,8 +1155,8 @@ class Test_Scripts:
     def INS_packet_reasonable_check_continent_ID(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_continent_ID.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_continent_ID.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         pos_list = []
         pos_err_list = []
@@ -1192,8 +1192,8 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_week(self):
         result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -1241,8 +1241,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_time_ms(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gps_week_list = []
         gps_ms_list = []
@@ -1291,8 +1291,8 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_temp(self):
         #result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_temp.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_temp.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         temp_list = []
         self.uut.start_listen_data(0x050a)
@@ -1341,8 +1341,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_status_gnss(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_status_gnss.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_gnss.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         pps_list = []
         gnss_data_list = []
@@ -1396,8 +1396,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_status_imu(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_status_imu.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_imu.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         master_fail_list = []
         hw_err_list = []
@@ -1469,8 +1469,8 @@ class Test_Scripts:
     def DM_packet_reasonable_check_status_operation(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_check_status_operation.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_operation.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         power_list = []
         mcu_list = []
@@ -1531,8 +1531,8 @@ class Test_Scripts:
     def IMU_data_packet_reasonable_check_week(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         imu_week_list = []
         imu_ms_list = []
@@ -1585,8 +1585,8 @@ class Test_Scripts:
     def IMU_data_packet_reasonable_check_ms(self):
         result = False
         interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         imu_week_list = []
         imu_ms_list = []
@@ -1645,8 +1645,8 @@ class Test_Scripts:
 = {len(imu_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair}, interval error = {num_interval_err} ', 'interval = 1000ms'
 
     def IMU_data_packet_reasonable_check_accel(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_accel.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_accel.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         imu_accel_x_list = []
         imu_accel_y_list = []
@@ -1687,8 +1687,8 @@ class Test_Scripts:
             return True, f'accel mode = 1g,total packets={len(imu_accel_x_list)}', 'accel of module is about 1g'
 
     def IMU_data_packet_reasonable_check_gyro(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/RawIMU_packet_check_gyro.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_gyro.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         imu_gyro_x_list = []
         imu_gyro_y_list = []
@@ -1726,8 +1726,8 @@ class Test_Scripts:
             return True, f'gyro of each axis is below 5 degree/s', 'gyro of each axis is below 5 degree/s'
 
     def NMEA_GNGGA_data_packet_check_ID_GNGGA(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_ID.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_ID.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
         gngga_id_err_list = []
@@ -1765,8 +1765,8 @@ class Test_Scripts:
             return True, f'all nmea data include GNGGA', 'all nmea data include GNGGA'
 
     def NMEA_GNGGA_data_packet_check_utc_time(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_UTC_time.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_UTC_time.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_utc_list = []
         gngga_utc_err_list = []
@@ -1818,8 +1818,8 @@ class Test_Scripts:
         gngga_lat_p = self.properties["NMEA"]["latitude"]
         gngga_lat_dev_p = self.properties["NMEA"]["latitude_dev"]
         gngga_lat_dir_p = self.properties["NMEA"]["latitude_dir"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_latitude.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_latitude.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
         unmatch_lat_list = []
@@ -1858,8 +1858,8 @@ class Test_Scripts:
         gngga_lon_p = self.properties["NMEA"]["longitude"]
         gngga_lon_dev_p = self.properties["NMEA"]["longitude_dev"]
         gngga_lon_dir_p = self.properties["NMEA"]["longitude_dir"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_longitude.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_longitude.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
         unmatch_lat_list = []
@@ -1896,8 +1896,8 @@ class Test_Scripts:
 
     def NMEA_GNGGA_data_packet_check_position_type(self):
         position_type_p = self.properties["NMEA"]["position type"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNGGA_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_position_type.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
         unmatch_pos_list = []
@@ -1930,8 +1930,8 @@ class Test_Scripts:
             return True, f'position type in GNGGA can converges to 4', 'position type in GNGGA can converges to 4(RTK_fixed)'
         
     def NMEA_GNZDA_data_packet_check_ID_GNZDA(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNZDA_ID.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{sself.product_sn}_{self.test_time}/NMEA_GNZDA_ID.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
         gngga_id_err_list = []
@@ -1968,8 +1968,8 @@ class Test_Scripts:
             return True, f'all nmea data include GNZDA', 'all nmea data include GNZDA'
 
     def NMEA_GNZDA_data_packet_check_utc_time(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/NMEA_GNZDA_UTC_time.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNZDA_UTC_time.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
         real_time_list = []
