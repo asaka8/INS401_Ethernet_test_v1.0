@@ -983,6 +983,213 @@ class Test_Scripts:
             else:
                 return True, f'The location point in Wuxi:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'The location point in Wuxi '
 
+    def INS_packet_reasonable_check_week(self):
+        result = False
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_week.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        gps_week_list = []
+        gps_ms_list = []
+        gps_secs_lst = []
+        real_time_list = []
+        unmatch_time_count = 0
+        gps_signal_loss = 0
+        self.uut.start_listen_data(0x030a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                real_time = get_curr_time()
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+110]
+                fmt = '<HIBBdddfffffffffffffffffffH'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_week_list.append(parse_data_lst[0])
+                gps_ms_list.append(parse_data_lst[1])
+                real_time_list.append(real_time)
+        self.uut.stop_listen_data()
+        
+        for i in range(len(gps_week_list)):
+            if gps_week_list[i] < 2232:
+                gps_signal_loss = gps_signal_loss +1
+            else:
+                gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
+                gps_secs_lst.append(gps_sec)
+                time_diff = cal_time_diff(gps_secs_lst[i], real_time_list[i])
+                #print(f'real time - gps time = {time_diff}')
+                if time_diff > 1 or time_diff < -1:
+                    unmatch_time_count = unmatch_time_count + 1
+
+        if len(gps_week_list) == 0:
+            return False, f'no INS packets', 'could capture INS packets'
+        else:
+            if unmatch_time_count == 0 and gps_signal_loss != len(gps_week_list):
+                return True, f'number of unmatch real time = {unmatch_time_count}, packets have GNSS time = {len(gps_week_list)-gps_signal_loss}', 'match real time <1s'
+            elif unmatch_time_count == 0 and gps_signal_loss == len(gps_week_list):
+                return False, f'packets have GNSS time = {len(gps_week_list)-gps_signal_loss}, INS packets = {len(gps_week_list)} ', 'at last one INS packet has GPS time'
+            else:
+                return False, f'number of unmatch real time = {unmatch_time_count}, no INS singal = {gps_signal_loss}', 'match real time, <1s'
+
+    def INS_packet_reasonable_check_time_ms(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_time_ms.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        gps_week_list = []
+        gps_ms_list = []
+        gps_millisecs_lst = []
+        gps_signal_loss = 0
+        num_interval_err = 0
+        neighbor_gps_pair = 0
+        self.uut.start_listen_data(0x030a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+110]
+                fmt = '<HIBBdddfffffffffffffffffffH'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                gps_week_list.append(parse_data_lst[0])
+                gps_ms_list.append(parse_data_lst[1])
+        self.uut.stop_listen_data()
+
+        if len(gps_week_list) >= 2:
+            for i in range(len(gps_week_list)):
+                if i + 1 < len(gps_week_list):
+                    if gps_week_list[i] >= 2232:
+                        if gps_week_list[i+1] >=2232:
+                            time_interval = gps_ms_list[i+1] - gps_ms_list[i]
+                            neighbor_gps_pair = neighbor_gps_pair +1
+                            if time_interval == 1000:
+                                continue
+                            else:
+                                num_interval_err = num_interval_err +1
+                    else:
+                        gps_signal_loss = gps_signal_loss + 1    
+            if gps_week_list[-1] < 2232:
+                gps_signal_loss = gps_signal_loss + 1
+
+        if len(gps_week_list) == 0:
+            return False, f'no INS packets', 'could capture INS packets'
+        elif len(gps_week_list) < 2:
+            return False, f'INS packets = {len(gps_week_list)} ', 'at last need two neighbor INS packets have GPS time'
+        elif len(gps_week_list) >=2 and neighbor_gps_pair <1:
+            return False, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor INS pairs = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+        else:
+            return True, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor INS pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+
+    def INS_packet_reasonable_check_position_type(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_position_type.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        pos_list = []
+        pos_err_list = []
+        self.uut.start_listen_data(0x030a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+110]
+                fmt = '<HIBBdddfffffffffffffffffffH'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                pos_list.append(parse_data_lst[2])
+        self.uut.stop_listen_data()
+
+        for i in range(len(pos_list)):
+            if pos_list[i] == 4:
+                continue
+            else:
+                pos_err_list.append(pos_list[i])
+
+        if len(pos_list) == 0:
+            return False, f'no INS packets', 'could capture INS packets'
+        else:
+            if len(pos_err_list) > 0:
+                return False, f'position type can not converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+            else:
+                return True, f'position type can converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+
+    def INS_packet_reasonable_check_status(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_status.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        pos_list = []
+        pos_err_list = []
+        self.uut.start_listen_data(0x030a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+110]
+                fmt = '<HIBBdddfffffffffffffffffffH'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                pos_list.append(parse_data_lst[3])
+        self.uut.stop_listen_data()
+
+        for i in range(len(pos_list)):
+            if pos_list[i] == 0:
+                continue
+            else:
+                pos_err_list.append(pos_list[i])
+
+        if len(pos_list) == 0:
+            return False, f'no INS packets', 'could capture INS packets'
+        else:
+            if len(pos_err_list) > 0:
+                return False, f'INS status type can not converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+            else:
+                return True, f'INS status type can converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+
+    def INS_packet_reasonable_check_continent_ID(self):
+        result = False
+        interval = None
+        logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/INS_packet_continent_ID.bin'
+        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.uut.serial_number, test_time=self.test_time)
+ 
+        pos_list = []
+        pos_err_list = []
+        self.uut.start_listen_data(0x030a)
+        start_time = time.time()
+        self.uut.reset_buffer()
+        while time.time() - start_time <= 10:
+            data = self.uut.read_data()
+            if data is not None:
+                self.test_log.write2bin(data)
+                parse_data = data[8:8+110]
+                fmt = '<HIBBdddfffffffffffffffffffH'
+                parse_data_lst = struct.unpack(fmt, parse_data)
+                pos_list.append(parse_data_lst[26])
+                #print(parse_data)
+                #print(parse_data_lst)
+        self.uut.stop_listen_data()
+
+        for i in range(len(pos_list)):
+            if pos_list[i] == 1:
+                continue
+            else:
+                #print(pos_list[i])
+                pos_err_list.append(pos_list[i])
+
+        if len(pos_list) == 0:
+            return False, f'no INS packets', 'could capture INS packets'
+        else:
+            if len(pos_err_list) > 0:
+                return False, f'Continent ID is not ID_ASIA(1), ID=1:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'Continent ID is ID_ASIA'
+            else:
+                return True, f'Continent ID is ID_ASIA, ID=1:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'Continent ID is ID_ASIA'
+
     def DM_packet_reasonable_check_week(self):
         result = False
         logf_name = f'./data/Packet_ODR_test_data/{self.uut.serial_number}_{self.test_time}/DM_packet_week.bin'
