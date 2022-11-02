@@ -811,7 +811,7 @@ class Test_Scripts:
                 gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
                 gps_secs_lst.append(gps_sec)
                 time_diff = cal_time_diff(gps_secs_lst[i], real_time_list[i])
-                print(f'real time - gps time = {time_diff}')
+                #print(f'real time - gps time = {time_diff}')
                 if time_diff > 1 or time_diff < -1:
                     unmatch_time_count = unmatch_time_count + 1
 
@@ -833,7 +833,7 @@ class Test_Scripts:
  
         gps_week_list = []
         gps_ms_list = []
-        gps_millisecs_lst = []
+        gps_interval_err_lst = []
         gps_signal_loss = 0
         num_interval_err = 0
         neighbor_gps_pair = 0
@@ -861,7 +861,7 @@ class Test_Scripts:
                             if time_interval == 1000:
                                 continue
                             else:
-                                num_interval_err = num_interval_err +1
+                                gps_interval_err_lst.append([i+2,time_interval])
                     else:
                         gps_signal_loss = gps_signal_loss + 1    
             if gps_week_list[-1] < 2232:
@@ -873,8 +873,10 @@ class Test_Scripts:
             return False, f'GNSS packets = {len(gps_week_list)} ', 'at last need two neighbor DM packets have GPS time'
         elif len(gps_week_list) >=2 and neighbor_gps_pair <1:
             return False, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pairs = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+        elif len(gps_interval_err_lst) >0:
+            return False, f'GNSS packets={len(gps_week_list)}, packets have gps time={len(gps_week_list)-gps_signal_loss}, neighbor gps pair={neighbor_gps_pair} error interval={len(gps_interval_err_lst)} ', 'interval = 1000ms'
         else:
-            return True, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+            return True, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def GNSS_packet_reasonable_check_position_type(self):
         result = False
@@ -966,7 +968,7 @@ class Test_Scripts:
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append([parse_data_lst[3], parse_data_lst[4]])
-                print(parse_data_lst[3], parse_data_lst[4])
+                #print(parse_data_lst[3], parse_data_lst[4])
         self.uut.stop_listen_data()
 
         for i in range(len(sat_list)):
@@ -1039,7 +1041,7 @@ class Test_Scripts:
  
         gps_week_list = []
         gps_ms_list = []
-        gps_millisecs_lst = []
+        gps_interval_err_lst = []
         gps_signal_loss = 0
         num_interval_err = 0
         neighbor_gps_pair = 0
@@ -1064,10 +1066,10 @@ class Test_Scripts:
                         if gps_week_list[i+1] >=2232:
                             time_interval = gps_ms_list[i+1] - gps_ms_list[i]
                             neighbor_gps_pair = neighbor_gps_pair +1
-                            if time_interval == 1000:
+                            if time_interval == 10:
                                 continue
                             else:
-                                num_interval_err = num_interval_err +1
+                                gps_interval_err_lst.append([i+2,time_interval])
                     else:
                         gps_signal_loss = gps_signal_loss + 1    
             if gps_week_list[-1] < 2232:
@@ -1079,8 +1081,10 @@ class Test_Scripts:
             return False, f'INS packets = {len(gps_week_list)} ', 'at last need two neighbor INS packets have GPS time'
         elif len(gps_week_list) >=2 and neighbor_gps_pair <1:
             return False, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor INS pairs = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+        elif len(gps_interval_err_lst) >0:
+            return False, f'INS packets={len(gps_week_list)}, packets have gps time={len(gps_week_list)-gps_signal_loss}, neighbor gps pair={neighbor_gps_pair} error interval={len(gps_interval_err_lst)} ', 'interval = 1000ms'
         else:
-            return True, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor INS pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+            return True, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def INS_packet_reasonable_check_position_type(self):
         result = False
@@ -1246,7 +1250,7 @@ class Test_Scripts:
  
         gps_week_list = []
         gps_ms_list = []
-        gps_millisecs_lst = []
+        gps_interval_err_lst = []
         gps_signal_loss = 0
         num_interval_err = 0
         neighbor_gps_pair = 0
@@ -1274,7 +1278,7 @@ class Test_Scripts:
                             if time_interval == 1000:
                                 continue
                             else:
-                                num_interval_err = num_interval_err +1
+                                gps_interval_err_lst.append([i+2,time_interval])
                     else:
                         gps_signal_loss = gps_signal_loss + 1    
             if gps_week_list[-1] < 2232:
@@ -1283,11 +1287,13 @@ class Test_Scripts:
         if len(gps_week_list) == 0:
             return False, f'no DM packets', 'could capture DM packets'
         elif len(gps_week_list) < 2:
-            return False, f'DM packets = {len(gps_week_list)} ', 'at last need two neighbor DM packets have GPS time'
+            return False, f'DM packets={len(gps_week_list)} ', 'at last need two neighbor DM packets have GPS time'
         elif len(gps_week_list) >=2 and neighbor_gps_pair <1:
-            return False, f'DM packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pairs = {neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+            return False, f'DM packets={len(gps_week_list)}, packets have gps time={len(gps_week_list)-gps_signal_loss}\, neighbor gps pairs={neighbor_gps_pair} ', 'at last one pair neighbor DM packets has gps signal'
+        elif len(gps_interval_err_lst) >0:
+            return False, f'DM packets={len(gps_week_list)}, packets have gps time={len(gps_week_list)-gps_signal_loss}, neighbor gps pair={neighbor_gps_pair} error interval={len(gps_interval_err_lst)} ', 'interval = 1000ms'
         else:
-            return True, f'DM packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} ', 'interval = 1000ms'
+            return True, f'DM packets={len(gps_week_list)}, packets have gps time={len(gps_week_list)-gps_signal_loss}, neighbor gps pair={neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def DM_packet_reasonable_check_temp(self):
         #result = False
@@ -1930,7 +1936,7 @@ class Test_Scripts:
             return True, f'position type in GNGGA can converges to 4', 'position type in GNGGA can converges to 4(RTK_fixed)'
         
     def NMEA_GNZDA_data_packet_check_ID_GNZDA(self):
-        logf_name = f'./data/Packet_ODR_test_data/{sself.product_sn}_{self.test_time}/NMEA_GNZDA_ID.bin'
+        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNZDA_ID.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
         gngga_list = []
