@@ -22,8 +22,17 @@ def get_sentence_type(gngga_str):
     return gngga.sentence_type
 
 def get_zda_utc(gnzda_str):
+    timestr = None
     gnzda = pynmea2.parse(gnzda_str)
-    return gnzda.datetime
+    try:
+        timestr = gnzda.datetime
+    except ValueError as e:
+        #print(e, type(e))
+        timestr = e
+        return timestr
+    else:
+        #timestr = gnzda.datetime
+        return timestr
 
 if __name__ == "__main__":
     '''

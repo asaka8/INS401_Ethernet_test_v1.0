@@ -2000,18 +2000,23 @@ class Test_Scripts:
         for i in range(len(gngga_list)):
             datetime_zda = get_zda_utc(gngga_list[i])
             #print(f'gnzda utc = {datetime_zda}')
-            time_now = real_time_list[i]
-            #print(f'local time = {time_now}')
-            time_diff = float(time_now.timestamp()) - datetime_zda.timestamp()
-            #print(time_diff)
-            if -1 < time_diff < 1:
-                continue
+            if str(datetime_zda) == 'day is out of range for month':
+                print(f'error: {datetime_zda}')
+                exception_list.append(gngga_list[i])
             else:
-                unmatch_time_list.append(gngga_list[i])
+                time_now = real_time_list[i]
+                #print(f'local time = {time_now}')
+                time_diff = float(time_now.timestamp()) - datetime_zda.timestamp()
+                #print(time_diff)
+                if -1 < time_diff < 1:
+                    continue
+                else:
+                    unmatch_time_list.append(gngga_list[i])
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNZDA packets!', 'could capture NMEA GNZDA packets'
-        elif len(unmatch_time_list) > 0:
-            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/{len(gngga_list)}', 'UTC time in GNZDA matchs the real time '
+        elif len(unmatch_time_list) > 0 or len(exception_list) > 0:
+            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/\
+{len(gngga_list)}, vlaue error count={len(exception_list)}/{len(gngga_list)}', 'UTC time in GNZDA matchs the real time '
         else:
             return True, f'UTC time in GNZDA matchs the real time', 'UTC time in GNZDA matchs the real time'
