@@ -42,7 +42,7 @@ class Test_Scripts:
     def get_production_info(self):
         message_bytes = []
         command = INPUT_PACKETS[0]
-        response = self.uut.write_read_response(command, message_bytes, 0.1)
+        response = self.uut.write_read_response(command, message_bytes, 0.5)
         info_text = response[2].decode()
         expect_info = self.properties["productINFO"]
 
