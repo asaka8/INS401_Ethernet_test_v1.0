@@ -435,6 +435,7 @@ class Ethernet_Dev:
         crc_msb = (crc & 0xFF00) >> 8
         crc_lsb = (crc & 0x00FF)
         return [crc_msb, crc_lsb]
+        
     def bytearray2string(self, data = []):
         str_list = ''
         for i in range(len(data)):
