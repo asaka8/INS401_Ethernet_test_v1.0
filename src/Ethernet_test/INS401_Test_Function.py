@@ -360,7 +360,7 @@ class Test_Scripts:
             time.sleep(0.5)
             self.uut.send_message(save_command, save_message_bytes)
             self.uut.send_message(reset_command, reset_message_bytes)
-            self.uut.reset_dev()
+            self.uut.reset_dev_info()
             time.sleep(60)
             self.uut.find_device(times=0)
             get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.1)
