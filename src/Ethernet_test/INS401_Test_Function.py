@@ -641,7 +641,7 @@ class Test_Scripts:
                 self.uut.send_message(set_command, set_message_bytes)
                 time.sleep(0.5)
                 self.uut.send_message(save_command, save_message_bytes)
-                get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.1)
+                get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.5)
                 get_params = float('%.2f' % (struct.unpack('<f', get_response[2][4:]))[0])
                 if x % 2 == 1: 
                     if get_params == val[0]:
@@ -1795,7 +1795,7 @@ class Test_Scripts:
             print('no NMEA GNGGA packets!')
 
         for i in range(len(gngga_utc_list)):
-            print(gngga_utc_list[i])
+            #print(gngga_utc_list[i])
             hour = int(gngga_utc_list[i][0:2])
             minute = int(gngga_utc_list[i][2:4])
             second = int(gngga_utc_list[i][4:6])
@@ -1809,6 +1809,7 @@ class Test_Scripts:
                 if abs(time_diff) < 1000:
                     continue
                 else:
+                    #print(f'unmatch: {time_diff}')
                     unmatch_time_list.append(gngga_list[i])
             else:
                 unmatch_time_list.append(gngga_utc_list[i])
@@ -1980,6 +1981,7 @@ class Test_Scripts:
         gngga_list = []
         real_time_list = []
         unmatch_time_list = []
+        exception_list = []
         self.uut.start_listen_data_nmea(0x5a44)
         start_time = time.time()
         self.uut.reset_buffer()
