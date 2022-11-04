@@ -37,7 +37,7 @@ class Ethernet_Dev:
             self.filter_device_type = options.device_type
             self.filter_device_type_assigned = True
 
-    def reset_dev(self):
+    def reset_dev_info(self):
         self.app_version = None
         self.dst_mac = 'FF:FF:FF:FF:FF:FF'
         self.src_mac = None
@@ -65,7 +65,7 @@ class Ethernet_Dev:
             iface=iface[0], prn=self.handle_receive_packet, filter=filter_exp)
         async_sniffer.start()
         time.sleep(0.01)
-        sendp(command_line, iface=iface[0], verbose=0, count = 2) #????? iface[1]
+        sendp(command_line, iface=iface[0], verbose=0, count = 2)
         time.sleep(0.5)
         async_sniffer.stop()
 
