@@ -361,7 +361,7 @@ class Test_Scripts:
             self.uut.send_message(save_command, save_message_bytes)
             self.uut.send_message(reset_command, reset_message_bytes)
             self.uut.reset_dev()
-            time.sleep(30)
+            time.sleep(60)
             self.uut.find_device(times=0)
             get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.1)
             get_params = float('%.2f' % (struct.unpack('<f', get_response[2][4:]))[0])
