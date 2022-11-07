@@ -7,6 +7,7 @@ import threading
 
 from tqdm import trange
 from ..conmunicator.INS401_Ethernet import Ethernet_Dev
+from ..conmunicator.ntrip_center import *
 from moudle.gps_time_module import get_curr_time, gps_time, cal_time_diff, stamptime_to_datetime
 from moudle.nmea_module import *
 from ..test_framwork.Jsonf_Creater import Json_Creat
@@ -881,6 +882,14 @@ class Test_Scripts:
     def GNSS_packet_reasonable_check_position_type(self):
         result = False
         interval = None
+        def run(runtime):
+            RuNtrip(self.uut).ntrip_client_thread(runtime)
+        t_ntrip = threading.Thread(target=run,args=(30,))
+        print('start ntrip...')
+        t_ntrip.start()
+        time.sleep(5)
+        print('wait for ntrip finish...')
+
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_position_type.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
@@ -898,6 +907,9 @@ class Test_Scripts:
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[2])
         self.uut.stop_listen_data()
+
+        t_ntrip.join()
+        print(' ntrip is finished!')
 
         for i in range(len(pos_list)):
             if pos_list[i] == 4:
