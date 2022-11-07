@@ -182,7 +182,7 @@ class RuNtrip:
             base_rtcm_packet = self.ether.build_packet(
                 self.ether.get_dst_mac(), 
                 self.ether.get_src_mac(),
-                b'\x02\x0b', bytes(data))
+                b'\x02\x0b', list(data))
             self.ether.ping_device()
             self.ether.write(base_rtcm_packet)
 
