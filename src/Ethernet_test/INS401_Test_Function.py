@@ -880,15 +880,13 @@ class Test_Scripts:
             return True, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def GNSS_packet_reasonable_check_position_type(self):
-        result = False
-        interval = None
-        def run(runtime):
-            RuNtrip(self.uut).ntrip_client_thread(runtime)
-        t_ntrip = threading.Thread(target=run,args=(30,))
-        print('start ntrip...')
-        t_ntrip.start()
-        time.sleep(5)
-        print('wait for ntrip finish...')
+        runtime = 30
+        ntrip = RuNtrip()
+        #self.eth.find_device(1)
+        self.eth.ping_device()
+        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(runtime,))
+        print("Run ntrip...")
+        ntrip_thread.start()
 
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_position_type.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
@@ -898,7 +896,7 @@ class Test_Scripts:
         self.uut.start_listen_data(0x020a)
         start_time = time.time()
         self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
+        while time.time() - start_time <= runtime:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
@@ -906,10 +904,11 @@ class Test_Scripts:
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[2])
+                #print(f'pos = {parse_data_lst[2]}')
         self.uut.stop_listen_data()
 
-        t_ntrip.join()
-        print(' ntrip is finished!')
+        ntrip_thread.join()
+        print("ntrip stop!")
 
         for i in range(len(pos_list)):
             if pos_list[i] == 4:
@@ -920,10 +919,10 @@ class Test_Scripts:
         if len(pos_list) == 0:
             return False, f'no GNSS packets', 'could capture GNSS packets'
         else:
-            if len(pos_err_list) > 0:
-                return False, f'position type can not converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+            if len(pos_list) - len(pos_err_list) <= 0:
+                return False, f'position type can not converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
             else:
-                return True, f'position type can converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+                return True, f'position type can converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
 
     def GNSS_packet_reasonable_check_satellites(self):
         result = False
@@ -944,7 +943,7 @@ class Test_Scripts:
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append(parse_data_lst[9])
-                #print(parse_data_lst[9], parse_data_lst[10])
+                print(parse_data_lst[9], parse_data_lst[10])
         self.uut.stop_listen_data()
 
         for i in range(len(sat_list)):
@@ -1099,8 +1098,14 @@ class Test_Scripts:
             return True, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def INS_packet_reasonable_check_position_type(self):
-        result = False
-        interval = None
+        runtime = 30
+        ntrip = RuNtrip()
+        #self.eth.find_device(1)
+        self.eth.ping_device()
+        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(runtime,))
+        print("Run ntrip...")
+        ntrip_thread.start()
+
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_position_type.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
  
@@ -1109,7 +1114,7 @@ class Test_Scripts:
         self.uut.start_listen_data(0x030a)
         start_time = time.time()
         self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
+        while time.time() - start_time <= runtime:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
@@ -1117,7 +1122,11 @@ class Test_Scripts:
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[2])
+                #print(f'pos = {parse_data_lst[2]}')
         self.uut.stop_listen_data()
+
+        ntrip_thread.join()
+        print("ntrip stop!")
 
         for i in range(len(pos_list)):
             if pos_list[i] == 4:
@@ -1128,10 +1137,10 @@ class Test_Scripts:
         if len(pos_list) == 0:
             return False, f'no INS packets', 'could capture INS packets'
         else:
-            if len(pos_err_list) > 0:
-                return False, f'position type can not converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+            if len(pos_list) - len(pos_err_list) <= 0:
+                return False, f'position type can not converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
             else:
-                return True, f'position type can converges to 4, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+                return True, f'position type can converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
 
     def INS_packet_reasonable_check_status(self):
         result = False
@@ -1914,6 +1923,14 @@ class Test_Scripts:
             return True, f'longitude in GNGGA within a reasonable range', 'longitude in GNGGA within a reasonable range'
 
     def NMEA_GNGGA_data_packet_check_position_type(self):
+        runtime = 30
+        ntrip = RuNtrip()
+        #self.eth.find_device(1)
+        self.eth.ping_device()
+        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(runtime,))
+        print("Run ntrip...")
+        ntrip_thread.start()
+
         position_type_p = self.properties["NMEA"]["position type"]
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_position_type.bin'
         self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
@@ -1923,13 +1940,18 @@ class Test_Scripts:
         self.uut.start_listen_data_nmea(0x4747)
         start_time = time.time()
         self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
+        while time.time() - start_time <= runtime:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
                 parse_data = str(data[0:82], 'utf-8')
                 gngga_list.append(parse_data)
+                #print(f'pos = {get_position_type(parse_data)}')
         self.uut.stop_listen_data()
+
+        ntrip_thread.join()
+        print("ntrip stop!")
+
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -1943,10 +1965,10 @@ class Test_Scripts:
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
-        elif len(unmatch_pos_list) > 0:
-            return False, f'position type can not converges to 4, unmatch count={len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4'
+        elif len(gngga_list) - len(unmatch_pos_list) <= 0:
+            return False, f'position type can not converges to 4, pos=4: {len(gngga_list)-len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4'
         else:
-            return True, f'position type in GNGGA can converges to 4', 'position type in GNGGA can converges to 4(RTK_fixed)'
+            return True, f'position type in GNGGA can converges to 4, pos=4: {len(gngga_list)-len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4(RTK_fixed)'
         
     def NMEA_GNZDA_data_packet_check_ID_GNZDA(self):
         logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNZDA_ID.bin'
