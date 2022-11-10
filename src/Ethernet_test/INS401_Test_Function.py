@@ -1129,7 +1129,7 @@ class Test_Scripts:
         print("ntrip stop!")
 
         for i in range(len(pos_list)):
-            if pos_list[i] == 4:
+            if pos_list[i] == 0:
                 continue
             else:
                 pos_err_list.append(pos_list[i])
@@ -1138,9 +1138,9 @@ class Test_Scripts:
             return False, f'no INS packets', 'could capture INS packets'
         else:
             if len(pos_list) - len(pos_err_list) <= 0:
-                return False, f'position type can not converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+                return False, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static = 0'
             else:
-                return True, f'position type can converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
+                return True, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static = 0 '
 
     def INS_packet_reasonable_check_status(self):
         result = False
