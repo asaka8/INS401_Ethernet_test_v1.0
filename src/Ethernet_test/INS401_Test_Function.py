@@ -1765,7 +1765,7 @@ class Test_Scripts:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
+                parse_data = str(data[0:83], 'utf-8')
                 parse_data = str(data[0:37], 'utf-8')
                 gngga_list.append(parse_data)
                 #print(parse_data)
@@ -1807,7 +1807,7 @@ class Test_Scripts:
             if data is not None:
                 real_time = get_curr_time()
                 self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
+                parse_data = str(data[0:83], 'utf-8')
                 gngga_list = parse_data.split(",")
                 gngga_utc_list.append(gngga_list[1])
                 real_time_list.append(real_time)
@@ -1858,7 +1858,7 @@ class Test_Scripts:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
+                parse_data = str(data[0:83], 'utf-8')
                 gngga_list.append(parse_data)
         self.uut.stop_listen_data()
         if len(gngga_list) == 0:
@@ -1898,7 +1898,7 @@ class Test_Scripts:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
+                parse_data = str(data[0:83], 'utf-8')
                 gngga_list.append(parse_data)
         self.uut.stop_listen_data()
         if len(gngga_list) == 0:
@@ -1944,7 +1944,7 @@ class Test_Scripts:
             data = self.uut.read_data()
             if data is not None:
                 self.test_log.write2bin(data)
-                parse_data = str(data[0:82], 'utf-8')
+                parse_data = str(data[0:83], 'utf-8')
                 gngga_list.append(parse_data)
                 #print(f'pos = {get_position_type(parse_data)}')
         self.uut.stop_listen_data()
