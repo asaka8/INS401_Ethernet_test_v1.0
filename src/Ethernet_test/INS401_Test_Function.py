@@ -57,7 +57,7 @@ class Test_Scripts:
         expect_separator = ' '
         message_bytes = []
         command = INPUT_PACKETS[0]
-        response = self.uut.write_read_response(command, message_bytes, 0.1)
+        response = self.uut.write_read_response(command, message_bytes, 0.5)
         info_text = response[2].decode()
         self.product_sn = info_text.split(' ')[2]
 
@@ -104,7 +104,7 @@ class Test_Scripts:
         command = INPUT_PACKETS[3]
         message_bytes = []
 
-        response = self.uut.write_read_response(command, message_bytes, 0.1)
+        response = self.uut.write_read_response(command, message_bytes, 0.5)
 
         if response[0] == command:
             return True, f'{response[0].hex()}', f'{command.hex()}'
@@ -364,7 +364,7 @@ class Test_Scripts:
             self.uut.reset_dev_info()
             time.sleep(60)
             self.uut.find_device(times=0)
-            get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.1)
+            get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.5)
             get_params = float('%.2f' % (struct.unpack('<f', get_response[2][4:]))[0])
             actual_list.append(get_params)
             if get_params == params:
@@ -404,7 +404,7 @@ class Test_Scripts:
         # time.sleep(0.5)
         self.uut.send_message(set_command, set_message_bytes)
         time.sleep(0.5)
-        get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.1)
+        get_response = self.uut.write_read_response(get_command, get_message_bytes, 0.5)
         get_params = float('%.2f' % (struct.unpack('<f', get_response[2][4:]))[0])
         if get_params == val:
             result = True
@@ -675,7 +675,7 @@ class Test_Scripts:
         if (field_id >= 0) and (field_id <= 14):
             set_message_bytes.extend(bytes(val))
 
-        set_response = self.uut.write_read_response(set_command, set_message_bytes, 0.1)[2]
+        set_response = self.uut.write_read_response(set_command, set_message_bytes, 0.5)[2]
         set_response_val = struct.unpack('<I', set_response)[0]
 
         if set_response_val == 0:
@@ -702,7 +702,7 @@ class Test_Scripts:
 
         check_command = INPUT_PACKETS[8]
         check_message_bytes = []
-        check_response = self.uut.write_read_response(check_command, check_message_bytes, 0.1)[2]
+        check_response = self.uut.write_read_response(check_command, check_message_bytes, 0.5)[2]
 
         error_lst = []
         if check_response[0] != 1:
@@ -736,7 +736,7 @@ class Test_Scripts:
 
         check_command = INPUT_PACKETS[8]
         check_message_bytes = []
-        check_response = self.uut.write_read_response(check_command, check_message_bytes, 0.1)[2]
+        check_response = self.uut.write_read_response(check_command, check_message_bytes, 0.5)[2]
 
         params_lst = []
         params_buffer = check_response[8:56]
@@ -769,7 +769,7 @@ class Test_Scripts:
         cmd = INPUT_PACKETS[8]
         message_bytes = []
 
-        check_response = self.uut.write_read_response(cmd, message_bytes, 0.1)[2]
+        check_response = self.uut.write_read_response(cmd, message_bytes, 0.5)[2]
         vcode_ver_payload = check_response[2:4]
         vcode_ver = struct.unpack('<h', vcode_ver_payload)[0]
 
@@ -943,7 +943,7 @@ class Test_Scripts:
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append(parse_data_lst[9])
-                print(parse_data_lst[9], parse_data_lst[10])
+                #print(parse_data_lst[9], parse_data_lst[10])
         self.uut.stop_listen_data()
 
         for i in range(len(sat_list)):
