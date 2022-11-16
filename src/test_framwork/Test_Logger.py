@@ -35,6 +35,12 @@ class TestLogger:
             os.makedirs(data_dir)
         self.logf = open(file_name, 'wb')
 
+    def creat_binf_sct7(self, file_name):
+        data_dir = f'./data/static_test_data'
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        self.logf = open(file_name, 'wb')
+
     def write2bin(self, data):
         if data is not None:
             self.logf.write(data)
