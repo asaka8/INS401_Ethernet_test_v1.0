@@ -145,13 +145,12 @@ class NtripClient:
         self.is_close = True
 
 class RuNtrip:
-    def __init__(self, ether_dev):
+    def __init__(self, eth):
         path = os.getcwd()
         self.local_time = time.localtime()
         self.formatted_file_time = time.strftime("%Y_%m_%d_%H_%M_%S", self.local_time)
-        #self.ether = Ethernet_Dev()
-        self.ether = ether_dev
-        #self.ether.update_ethernet_info()
+        self.ether = eth
+        # self.ether.update_ethernet_info()
         # if self.ether.update_ethernet_info():
         #     pass_print('Connect device successfully')
         # else:
@@ -183,7 +182,7 @@ class RuNtrip:
                 self.ether.get_dst_mac(), 
                 self.ether.get_src_mac(),
                 b'\x02\x0b', list(data))
-            self.ether.ping_device()
+            # self.ether.ping_device()
             self.ether.write(base_rtcm_packet)
 
             if self.ntrip_rtcm_logf is not None:
