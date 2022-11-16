@@ -139,9 +139,13 @@ class Test_Environment:
     def setup_tests(self):
         '''for update
         '''
-        section5 = Test_Section("Longterm Test")
-        self.test_sections.append(section5)
-        section5.add_test_case(Code("Longterm setup Test", self.scripts.long_term_test_setup))
+        section7 = Test_Section("GNSS packet reasonable check")
+        self.test_sections.append(section7)
+        section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_week))
+        section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_time_ms))
+        section7.add_test_case(Code("check position type", self.scripts.GNSS_packet_reasonable_check_position_type))
+        section7.add_test_case(Code("check number of satellites", self.scripts.GNSS_packet_reasonable_check_satellites))
+        section7.add_test_case(Code("check latitude and longitude", self.scripts.GNSS_packet_reasonable_check_latlongitude))
 
     def run_tests(self):
         for section in self.test_sections:
