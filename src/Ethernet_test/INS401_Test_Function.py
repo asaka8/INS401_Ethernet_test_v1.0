@@ -778,10 +778,52 @@ class Test_Scripts:
         else:
             return False, f'vehicle table version: {except_ver}', f'vehicle table version: {vcode_ver}'
 
+    ### section7 GNSS packet reasonable check (connect antenna)
+
+    def static_test_setup(self):
+        static_run_time = self.properties["static test"]["STATIC_RUNNING_TIME"]
+        filter_type = self.properties["static test"]["TypeFilter"]
+        # logf_name = f'./data/static_test_data/{self.product_sn}_{self.test_time}/static_test_data_{self.test_time}.bin' 
+        # logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.pcap' 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        self.eth.find_device(0)
+        ntrip = RuNtrip(self.eth)
+        #self.eth.find_device(1)
+        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(static_run_time,))
+        print("Run ntrip...")
+        ntrip_thread.start()
+
+        start_time = time.time()
+        self.uut.start_listen_data(filter_type)
+        self.uut.reset_buffer()    
+        self.tlock.acquire()    
+        while time.time() - start_time <= static_run_time:
+            data = self.uut.read_data()
+            self.test_log.write2bin(data)
+            # self.test_log.write2pcap(data, logf_name)
+        self.tlock.release()
+        ntrip_thread.join()
+        print("ntrip stop!")
+        self.uut.stop_listen_data()
+        if self.uut.check_len() != 0:
+            while True:
+                data = self.uut.read_data()
+                self.test_log.write2bin(data)
+                if self.uut.check_len() == 0:
+                    break
+
     def GNSS_packet_reasonable_check_week(self):
-        result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        gnss_packet_type = [0x55, 0x55, 0x02, 0x0a]
  
         gps_week_list = []
         gps_ms_list = []
@@ -789,25 +831,21 @@ class Test_Scripts:
         real_time_list = []
         unmatch_time_count = 0
         gps_signal_loss = 0
-        self.uut.start_listen_data(0x020a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+77]
+        for i in range(len(log_data)):
+            data = log_data[i:i+87]
+            packet_start_flag = data.find(bytes(gnss_packet_type))
+            real_time = get_curr_time()
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         
         for i in range(len(gps_week_list)):
             if gps_week_list[i] < 2232:
-                gps_signal_loss = gps_signal_loss +1
+                gps_signal_loss = gps_signal_loss + 1
             else:
                 gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
                 gps_secs_lst.append(gps_sec)
@@ -827,10 +865,15 @@ class Test_Scripts:
                 return False, f'number of unmatch real time = {unmatch_time_count}, no GNSS singal = {gps_signal_loss}', 'match real time, <1s'
 
     def GNSS_packet_reasonable_check_time_ms(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        gnss_packet_type = [0x55, 0x55, 0x02, 0x0a]
  
         gps_week_list = []
         gps_ms_list = []
@@ -838,19 +881,15 @@ class Test_Scripts:
         gps_signal_loss = 0
         num_interval_err = 0
         neighbor_gps_pair = 0
-        self.uut.start_listen_data(0x020a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+77]
+        for i in range(len(log_data)):
+            data = log_data[i:i+87]
+            packet_start_flag = data.find(bytes(gnss_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
-        self.uut.stop_listen_data()
 
         if len(gps_week_list) >= 2:
             for i in range(len(gps_week_list)):
@@ -880,35 +919,28 @@ class Test_Scripts:
             return True, f'GNSS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def GNSS_packet_reasonable_check_position_type(self):
-        runtime = 30
-        ntrip = RuNtrip()
-        #self.eth.find_device(1)
-        self.eth.ping_device()
-        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(runtime,))
-        print("Run ntrip...")
-        ntrip_thread.start()
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
 
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        gnss_packet_type = [0x55, 0x55, 0x02, 0x0a]
+
         pos_list = []
         pos_err_list = []
-        self.uut.start_listen_data(0x020a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= runtime:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+77]
+
+        for i in range(len(log_data)):
+            data = log_data[i:i+87]
+            packet_start_flag = data.find(bytes(gnss_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[2])
                 #print(f'pos = {parse_data_lst[2]}')
-        self.uut.stop_listen_data()
-
-        ntrip_thread.join()
-        print("ntrip stop!")
 
         for i in range(len(pos_list)):
             if pos_list[i] == 4:
@@ -925,26 +957,27 @@ class Test_Scripts:
                 return True, f'position type can converges to 4, pos=4: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
 
     def GNSS_packet_reasonable_check_satellites(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_satellites.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        gnss_packet_type = [0x55, 0x55, 0x02, 0x0a]
  
         sat_list = []
         sat_err_list = []
-        self.uut.start_listen_data(0x020a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+77]
+        for i in range(len(log_data)):
+            data = log_data[i:i+87]
+            packet_start_flag = data.find(bytes(gnss_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append(parse_data_lst[9])
                 #print(parse_data_lst[9], parse_data_lst[10])
-        self.uut.stop_listen_data()
 
         for i in range(len(sat_list)):
             if sat_list[i] >= 16:
@@ -961,26 +994,27 @@ class Test_Scripts:
                 return True, f'number of satellites >= 16:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'number of satellites is not zero and >= 16 '
 
     def GNSS_packet_reasonable_check_latlongitude(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/GNSS_packet_lat_lon.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        gnss_packet_type = [0x55, 0x55, 0x02, 0x0a]
+
         sat_list = []
         sat_err_list = []
-        self.uut.start_listen_data(0x020a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+77]
+        for i in range(len(log_data)):
+            data = log_data[i:i+87]
+            packet_start_flag = data.find(bytes(gnss_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append([parse_data_lst[3], parse_data_lst[4]])
                 #print(parse_data_lst[3], parse_data_lst[4])
-        self.uut.stop_listen_data()
 
         for i in range(len(sat_list)):
             if 31.116666666667<sat_list[i][0]<32.033333333333 and 119.55<sat_list[i][1]<120.63333333333:
@@ -996,32 +1030,36 @@ class Test_Scripts:
             else:
                 return True, f'The location point in Wuxi:{len(sat_list)-len(sat_err_list)}/{len(sat_list)} ', 'The location point in Wuxi '
 
+    ### section8 INS packet reasonable check (connect antenna)
+
     def INS_packet_reasonable_check_week(self):
-        result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
+
         gps_week_list = []
         gps_ms_list = []
         gps_secs_lst = []
         real_time_list = []
         unmatch_time_count = 0
         gps_signal_loss = 0
-        self.uut.start_listen_data(0x030a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+110]
+        for i in range(len(log_data)):
+            data = log_data[i:i+120]
+            packet_start_flag = data.find(bytes(ins_packet_type))
+            real_time = get_curr_time()
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         
         for i in range(len(gps_week_list)):
             if gps_week_list[i] < 2232:
@@ -1045,30 +1083,31 @@ class Test_Scripts:
                 return False, f'number of unmatch real time = {unmatch_time_count}, no INS singal = {gps_signal_loss}', 'match real time, <1s'
 
     def INS_packet_reasonable_check_time_ms(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
+
         gps_week_list = []
         gps_ms_list = []
         gps_interval_err_lst = []
         gps_signal_loss = 0
         num_interval_err = 0
         neighbor_gps_pair = 0
-        self.uut.start_listen_data(0x030a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+110]
+        for i in range(len(log_data)):
+            data = log_data[i:i+120]
+            packet_start_flag = data.find(bytes(ins_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
-        self.uut.stop_listen_data()
 
         if len(gps_week_list) >= 2:
             for i in range(len(gps_week_list)):
@@ -1098,35 +1137,28 @@ class Test_Scripts:
             return True, f'INS packets = {len(gps_week_list)}, packets have gps time = {len(gps_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def INS_packet_reasonable_check_position_type(self):
-        runtime = 30
-        ntrip = RuNtrip()
-        #self.eth.find_device(1)
-        self.eth.ping_device()
-        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(runtime,))
-        print("Run ntrip...")
-        ntrip_thread.start()
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
 
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
+
         pos_list = []
         pos_err_list = []
-        self.uut.start_listen_data(0x030a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= runtime:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
+        for i in range(len(log_data)):
+            data = log_data[i:i+120]
+            packet_start_flag = data.find(bytes(ins_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 parse_data = data[8:8+110]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[2])
                 #print(f'pos = {parse_data_lst[2]}')
-        self.uut.stop_listen_data()
-
-        ntrip_thread.join()
-        print("ntrip stop!")
 
         for i in range(len(pos_list)):
             if pos_list[i] == 0:
@@ -1143,25 +1175,27 @@ class Test_Scripts:
                 return True, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static = 0 '
 
     def INS_packet_reasonable_check_status(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_status.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
+
         pos_list = []
         pos_err_list = []
-        self.uut.start_listen_data(0x030a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+110]
+        for i in range(len(log_data)):
+            data = log_data[i:i+120]
+            packet_start_flag = data.find(bytes(ins_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[3])
-        self.uut.stop_listen_data()
 
         for i in range(len(pos_list)):
             if pos_list[i] == 0:
@@ -1178,27 +1212,29 @@ class Test_Scripts:
                 return True, f'INS status type can converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
 
     def INS_packet_reasonable_check_continent_ID(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/INS_packet_continent_ID.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
+
         pos_list = []
         pos_err_list = []
-        self.uut.start_listen_data(0x030a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+110]
+        for i in range(len(log_data)):
+            data = log_data[i:i+120]
+            packet_start_flag = data.find(bytes(ins_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[26])
                 #print(parse_data)
                 #print(parse_data_lst)
-        self.uut.stop_listen_data()
 
         for i in range(len(pos_list)):
             if pos_list[i] == 1:
@@ -1215,32 +1251,37 @@ class Test_Scripts:
             else:
                 return True, f'Continent ID is ID_ASIA, ID=1:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'Continent ID is ID_ASIA'
 
+    ### section10 DM packet reasonable check (connect antenna)
+
     def DM_packet_reasonable_check_week(self):
-        result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
+
         gps_week_list = []
         gps_ms_list = []
         gps_secs_lst = []
         real_time_list = []
         unmatch_time_count = 0
         gps_signal_loss = 0
-        self.uut.start_listen_data(0x050a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+22]
+        for i in range(len(log_data)):
+            data = log_data[i:i+32]
+            packet_start_flag = data.find(bytes(dm_packet_type))
+            real_time = get_curr_time()
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         
         for i in range(len(gps_week_list)):
             if gps_week_list[i] < 2232:
@@ -1264,30 +1305,32 @@ class Test_Scripts:
                 return False, f'number of unmatch real time = {unmatch_time_count}, no gps singal = {gps_signal_loss}', 'match real time, <1s'
 
     def DM_packet_reasonable_check_time_ms(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_time_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
+
         gps_week_list = []
         gps_ms_list = []
         gps_interval_err_lst = []
         gps_signal_loss = 0
         num_interval_err = 0
         neighbor_gps_pair = 0
-        self.uut.start_listen_data(0x050a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+22]
+        for i in range(len(log_data)):
+            data = log_data[i:i+32]
+            packet_start_flag = data.find(bytes(dm_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
-        self.uut.stop_listen_data()
 
         if len(gps_week_list) >= 2:
             for i in range(len(gps_week_list)):
@@ -1317,28 +1360,31 @@ class Test_Scripts:
             return True, f'DM packets={len(gps_week_list)}, packets have gps time={len(gps_week_list)-gps_signal_loss}, neighbor gps pair={neighbor_gps_pair} error interval={len(gps_interval_err_lst)}', 'interval = 1000ms'
 
     def DM_packet_reasonable_check_temp(self):
-        #result = False
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_temp.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
+
         temp_list = []
-        self.uut.start_listen_data(0x050a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+22]
+        for i in range(len(log_data)):
+            data = log_data[i:i+32]
+            packet_start_flag = data.find(bytes(dm_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
-                gps_millisecs = parse_data_lst[1]
                 IMU_temp = parse_data_lst[3]
                 MCU_temp = parse_data_lst[4]
                 GNSS_chip_temp = parse_data_lst[5]
                 print(f'IMU = {IMU_temp}, MCU = {MCU_temp}, GNSS = {GNSS_chip_temp}')
                 temp_list.append([IMU_temp,MCU_temp,GNSS_chip_temp])
-        self.uut.stop_listen_data()
+
         if len(temp_list) == 0:
             print('no DM packets!')
 
@@ -1366,22 +1412,25 @@ class Test_Scripts:
                 return False, f'amount out of temp range: IMU={imu_out},MCU={mcu_out},GNSS={gnss_out}', '-40 < temp <85'
 
     def DM_packet_reasonable_check_status_gnss(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_gnss.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
+
         pps_list = []
         gnss_data_list = []
         gnss_signal_list = []
-        self.uut.start_listen_data(0x050a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+22]
+        for i in range(len(log_data)):
+            data = log_data[i:i+32]
+            packet_start_flag = data.find(bytes(dm_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 status_bit = parse_data_lst[2]
@@ -1404,7 +1453,6 @@ class Test_Scripts:
                     print(' GNSS chipset has data output, but no valid signal detected')
                 elif gnss_signal_list[-1] == '0':
                     print('GNSS signal normal')
-        self.uut.stop_listen_data()
         if len(pps_list) == 0:
             print('no DM packets!')
 
@@ -1421,11 +1469,17 @@ class Test_Scripts:
                 return True, 'GNSS status PPS / GNSS data / GNSS signal is always 0', 'GNSS status is always 0'
 
     def DM_packet_reasonable_check_status_imu(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_imu.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
+
         master_fail_list = []
         hw_err_list = []
         sw_err_list = []
@@ -1436,14 +1490,11 @@ class Test_Scripts:
         forced_restart_list = [] 
         crc_err_list = []
         tx_overflow_err_list = []
-        self.uut.start_listen_data(0x050a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+22]
+        for i in range(len(log_data)):
+            data = log_data[i:i+32]
+            packet_start_flag = data.find(bytes(dm_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_status_bit = parse_data_lst[2]
@@ -1463,7 +1514,6 @@ class Test_Scripts:
                     print('forced restart = 0 normal')
                 crc_err_list.append(dev_status_bin[23])
                 tx_overflow_err_list.append(dev_status_bin[22])
-        self.uut.stop_listen_data()
         if len(master_fail_list) == 0:
             print('no DM packets!')
 
@@ -1494,11 +1544,17 @@ class Test_Scripts:
                 return True, 'IMU status is always 0', 'IMU status is always 0'
 
     def DM_packet_reasonable_check_status_operation(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/DM_packet_check_status_operation.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
+
         power_list = []
         mcu_list = []
         temp_u_mcu_list = []
@@ -1507,14 +1563,11 @@ class Test_Scripts:
         temp_o_mcu_list = []
         temp_o_sta_list = []
         temp_o_imu_list = []
-        self.uut.start_listen_data(0x050a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+22]
+        for i in range(len(log_data)):
+            data = log_data[i:i+32]
+            packet_start_flag = data.find(bytes(dm_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_status_bit = parse_data_lst[2]
@@ -1528,7 +1581,6 @@ class Test_Scripts:
                 temp_o_mcu_list.append(dev_status_bin[13])
                 temp_o_sta_list.append(dev_status_bin[12])
                 temp_o_imu_list.append(dev_status_bin[11])
-        self.uut.stop_listen_data()
         if len(power_list) == 0:
             print('no DM packets!')
 
@@ -1555,33 +1607,37 @@ class Test_Scripts:
             else:
                 return True, 'IMU status is always 0', 'IMU status is always 0'
 
+    ### section11 INS packet reasonable check (connect antenna)
+
     def IMU_data_packet_reasonable_check_week(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_week.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        imu_packet_type = [0x55, 0x55, 0x01, 0x0a]
+
         imu_week_list = []
         imu_ms_list = []
         imu_gps_time = []
         real_time_list = []
         unmatch_time_count = 0
         gps_signal_loss = 0
-        self.uut.start_listen_data(0x010a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+30]
+        for i in range(len(log_data)):
+            real_time = get_curr_time()
+            data = log_data[i:i+40]
+            packet_start_flag = data.find(bytes(imu_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_week_list.append(parse_data_lst[0])
                 imu_ms_list.append(parse_data_lst[1])
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         if len(imu_week_list) == 0:
             print('no Raw IMU packets!')
 
@@ -1610,32 +1666,34 @@ class Test_Scripts:
 = {gps_signal_loss}', 'match real time, <1s'
 
     def IMU_data_packet_reasonable_check_ms(self):
-        result = False
-        interval = None
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_ms.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        imu_packet_type = [0x55, 0x55, 0x01, 0x0a]
+
         imu_week_list = []
         imu_ms_list = []
         real_time_list = []
         neighbor_gps_pair = 0
         gps_signal_loss = 0
         num_interval_err = 0
-        self.uut.start_listen_data(0x010a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+30]
+        for i in range(len(log_data)):
+            real_time = get_curr_time()
+            data = log_data[i:i+40]
+            packet_start_flag = data.find(bytes(imu_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_week_list.append(parse_data_lst[0])
                 imu_ms_list.append(parse_data_lst[1])
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         if len(imu_week_list) == 0:
             print('no Raw IMU packets!')
 
@@ -1672,27 +1730,31 @@ class Test_Scripts:
 = {len(imu_week_list)-gps_signal_loss}, neighbor gps pair = {neighbor_gps_pair}, interval error = {num_interval_err} ', 'interval = 1000ms'
 
     def IMU_data_packet_reasonable_check_accel(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_accel.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        imu_packet_type = [0x55, 0x55, 0x01, 0x0a]
+
         imu_accel_x_list = []
         imu_accel_y_list = []
         imu_accel_z_list = []
         accel_mod_err_list = []
-        self.uut.start_listen_data(0x010a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+30]
+        for i in range(len(log_data)):
+            data = log_data[i:i+40]
+            packet_start_flag = data.find(bytes(imu_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_accel_x_list.append(parse_data_lst[2])
                 imu_accel_y_list.append(parse_data_lst[3])
                 imu_accel_z_list.append(parse_data_lst[4])
-        self.uut.stop_listen_data()
         if len(imu_accel_x_list) == 0:
             print('no Raw IMU packets!')
 
@@ -1714,27 +1776,31 @@ class Test_Scripts:
             return True, f'accel mode = 1g,total packets={len(imu_accel_x_list)}', 'accel of module is about 1g'
 
     def IMU_data_packet_reasonable_check_gyro(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/RawIMU_packet_check_gyro.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        imu_packet_type = [0x55, 0x55, 0x01, 0x0a]
+
         imu_gyro_x_list = []
         imu_gyro_y_list = []
         imu_gyro_z_list = []
         imu_gyro_err_list = []
-        self.uut.start_listen_data(0x010a)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = data[8:8+30]
+        for i in range(len(log_data)):
+            data = log_data[i:i+40]
+            packet_start_flag = data.find(bytes(imu_packet_type))
+            if packet_start_flag == 0:
+                parse_data = data[8:-2]
                 fmt = '<HIffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_gyro_x_list.append(parse_data_lst[5])
                 imu_gyro_y_list.append(parse_data_lst[6])
                 imu_gyro_z_list.append(parse_data_lst[7])
-        self.uut.stop_listen_data()
         if len(imu_gyro_x_list) == 0:
             print('no Raw IMU packets!')
 
@@ -1752,26 +1818,32 @@ class Test_Scripts:
         else:
             return True, f'gyro of each axis is below 5 degree/s', 'gyro of each axis is below 5 degree/s'
 
+    ### section11 NMEA GNGGA
+
     def NMEA_GNGGA_data_packet_check_ID_GNGGA(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_ID.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNGGA_packet_type = [0x47, 0x4E, 0x47, 0x47, 0x41]
+
         gngga_list = []
         gngga_id_err_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:83], 'utf-8')
+        for i in range(len(log_data)):
+            data = log_data[i:i+82]
+            packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            if packet_start_flag == 0:
+                parse_data = str(data[0:82], 'utf-8')
                 parse_data = str(data[0:37], 'utf-8')
                 gngga_list.append(parse_data)
                 #print(parse_data)
-        self.uut.stop_listen_data()
         if len(gngga_list) == 0:
-            print('no NMEA GNZDA packets!')
+            print('no NMEA GNGGA packets!')
 
         for i in range(len(gngga_list)):
             gngga_talker = get_talker(gngga_list[i])
@@ -1792,31 +1864,35 @@ class Test_Scripts:
             return True, f'all nmea data include GNGGA', 'all nmea data include GNGGA'
 
     def NMEA_GNGGA_data_packet_check_utc_time(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_UTC_time.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNGGA_packet_type = [0x47, 0x4E, 0x47, 0x47, 0x41]
+
         gngga_utc_list = []
         gngga_utc_err_list = []
         real_time_list = []
         unmatch_time_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
+        for i in range(len(log_data)):
+            data = log_data[i:i+82]
+            packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            if packet_start_flag == 0:
                 real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:83], 'utf-8')
+                parse_data = str(data, 'utf-8')
                 gngga_list = parse_data.split(",")
                 gngga_utc_list.append(gngga_list[1])
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         if len(gngga_utc_list) == 0:
             print('no NMEA GNGGA packets!')
 
         for i in range(len(gngga_utc_list)):
-            #print(gngga_utc_list[i])
+            print(gngga_utc_list[i])
             hour = int(gngga_utc_list[i][0:2])
             minute = int(gngga_utc_list[i][2:4])
             second = int(gngga_utc_list[i][4:6])
@@ -1830,7 +1906,6 @@ class Test_Scripts:
                 if abs(time_diff) < 1000:
                     continue
                 else:
-                    #print(f'unmatch: {time_diff}')
                     unmatch_time_list.append(gngga_list[i])
             else:
                 unmatch_time_list.append(gngga_utc_list[i])
@@ -1846,21 +1921,25 @@ class Test_Scripts:
         gngga_lat_p = self.properties["NMEA"]["latitude"]
         gngga_lat_dev_p = self.properties["NMEA"]["latitude_dev"]
         gngga_lat_dir_p = self.properties["NMEA"]["latitude_dir"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_latitude.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNGGA_packet_type = [0x47, 0x4E, 0x47, 0x47, 0x41]
+
         gngga_list = []
         unmatch_lat_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:83], 'utf-8')
+        for i in range(len(log_data)):
+            data = log_data[i:i+82]
+            packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            if packet_start_flag == 0:
+                parse_data = str(data, 'utf-8')
                 gngga_list.append(parse_data)
-        self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -1886,21 +1965,25 @@ class Test_Scripts:
         gngga_lon_p = self.properties["NMEA"]["longitude"]
         gngga_lon_dev_p = self.properties["NMEA"]["longitude_dev"]
         gngga_lon_dir_p = self.properties["NMEA"]["longitude_dir"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_longitude.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNGGA_packet_type = [0x47, 0x4E, 0x47, 0x47, 0x41]
+
         gngga_list = []
         unmatch_lat_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:83], 'utf-8')
+        for i in range(len(log_data)):
+            data = log_data[i:i+82]
+            packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            if packet_start_flag == 0:
+                parse_data = str(data, 'utf-8')
                 gngga_list.append(parse_data)
-        self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -1923,35 +2006,27 @@ class Test_Scripts:
             return True, f'longitude in GNGGA within a reasonable range', 'longitude in GNGGA within a reasonable range'
 
     def NMEA_GNGGA_data_packet_check_position_type(self):
-        runtime = 30
-        ntrip = RuNtrip()
-        #self.eth.find_device(1)
-        self.eth.ping_device()
-        ntrip_thread = threading.Thread(target=ntrip.ntrip_client_thread, args=(runtime,))
-        print("Run ntrip...")
-        ntrip_thread.start()
-
         position_type_p = self.properties["NMEA"]["position type"]
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNGGA_position_type.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNGGA_packet_type = [0x47, 0x4E, 0x47, 0x47, 0x41]
+
         gngga_list = []
         unmatch_pos_list = []
-        self.uut.start_listen_data_nmea(0x4747)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= runtime:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:83], 'utf-8')
+        for i in range(len(log_data)):
+            data = log_data[i:i+82]
+            packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            if packet_start_flag == 0:
+                parse_data = str(data, 'utf-8')
                 gngga_list.append(parse_data)
-                #print(f'pos = {get_position_type(parse_data)}')
         self.uut.stop_listen_data()
-
-        ntrip_thread.join()
-        print("ntrip stop!")
-
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -1965,28 +2040,33 @@ class Test_Scripts:
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
-        elif len(gngga_list) - len(unmatch_pos_list) <= 0:
-            return False, f'position type can not converges to 4, pos=4: {len(gngga_list)-len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4'
+        elif len(unmatch_pos_list) > 0:
+            return False, f'position type can not converges to 4, unmatch count={len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4'
         else:
-            return True, f'position type in GNGGA can converges to 4, pos=4: {len(gngga_list)-len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4(RTK_fixed)'
-        
+            return True, f'position type in GNGGA can converges to 4', 'position type in GNGGA can converges to 4(RTK_fixed)'
+
+    ### section12 NMEA GNZDA
+
     def NMEA_GNZDA_data_packet_check_ID_GNZDA(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNZDA_ID.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNZDA_packet_type = [0x47, 0x4E, 0x5A, 0x44, 0x41]
+
         gngga_list = []
         gngga_id_err_list = []
-        self.uut.start_listen_data_nmea(0x5a44)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:37], 'utf-8')
+        for i in range(len(log_data)):
+            data = log_data[i:i+37]
+            packet_start_flag = data.find(bytes(GNZDA_packet_type))
+            if packet_start_flag == 0:
+                parse_data = str(data, 'utf-8')
                 gngga_list.append(parse_data)
-                #print(parse_data)
-        self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNZDA packets!')
 
@@ -2009,50 +2089,48 @@ class Test_Scripts:
             return True, f'all nmea data include GNZDA', 'all nmea data include GNZDA'
 
     def NMEA_GNZDA_data_packet_check_utc_time(self):
-        logf_name = f'./data/Packet_ODR_test_data/{self.product_sn}_{self.test_time}/NMEA_GNZDA_UTC_time.bin'
-        self.test_log.creat_binf_sct2(file_name=logf_name, sn_num=self.product_sn, test_time=self.test_time)
- 
+        logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
+        self.test_log.creat_binf_sct7(logf_name)
+
+        if not os.path.exists(logf_name):
+            self.static_test_setup()
+            logf = open(logf_name, 'rb')
+        else:
+            logf = open(logf_name, 'rb')
+        log_data = logf.read()
+        GNZDA_packet_type = [0x47, 0x4E, 0x5A, 0x44, 0x41]
+
         gngga_list = []
         real_time_list = []
         unmatch_time_list = []
-        exception_list = []
-        self.uut.start_listen_data_nmea(0x5a44)
-        start_time = time.time()
-        self.uut.reset_buffer()
-        while time.time() - start_time <= 10:
-            data = self.uut.read_data()
-            if data is not None:
-                real_time = get_curr_time()
-                self.test_log.write2bin(data)
-                parse_data = str(data[0:37], 'utf-8')
+        for i in range(len(log_data)):
+            real_time = get_curr_time()
+            data = log_data[i:i+37]
+            packet_start_flag = data.find(bytes(GNZDA_packet_type))
+            if packet_start_flag == 0:
+                parse_data = str(data, 'utf-8')
                 #gngga_list = parse_data.split(",")
                 #gngga_utc_list.append(gngga_list[1])
                 gngga_list.append(parse_data)
                 real_time_list.append(real_time)
-        self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNZDA packets!')
 
         for i in range(len(gngga_list)):
             datetime_zda = get_zda_utc(gngga_list[i])
             #print(f'gnzda utc = {datetime_zda}')
-            if str(datetime_zda) == 'day is out of range for month':
-                print(f'error: {datetime_zda}')
-                exception_list.append(gngga_list[i])
+            time_now = real_time_list[i]
+            #print(f'local time = {time_now}')
+            time_diff = float(time_now.timestamp()) - datetime_zda.timestamp()
+            #print(time_diff)
+            if -1 < time_diff < 1:
+                continue
             else:
-                time_now = real_time_list[i]
-                #print(f'local time = {time_now}')
-                time_diff = float(time_now.timestamp()) - datetime_zda.timestamp()
-                #print(time_diff)
-                if -1 < time_diff < 1:
-                    continue
-                else:
-                    unmatch_time_list.append(gngga_list[i])
+                unmatch_time_list.append(gngga_list[i])
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNZDA packets!', 'could capture NMEA GNZDA packets'
-        elif len(unmatch_time_list) > 0 or len(exception_list) > 0:
-            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/\
-{len(gngga_list)}, vlaue error count={len(exception_list)}/{len(gngga_list)}', 'UTC time in GNZDA matchs the real time '
+        elif len(unmatch_time_list) > 0:
+            return False, f'UTC time do not matchs the real time, unmatch count={len(unmatch_time_list)}/{len(gngga_list)}', 'UTC time in GNZDA matchs the real time '
         else:
             return True, f'UTC time in GNZDA matchs the real time', 'UTC time in GNZDA matchs the real time'
