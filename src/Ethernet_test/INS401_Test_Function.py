@@ -1176,7 +1176,7 @@ class Test_Scripts:
 
     def INS_packet_reasonable_check_status(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1213,7 +1213,7 @@ class Test_Scripts:
 
     def INS_packet_reasonable_check_continent_ID(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1255,7 +1255,7 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_week(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1306,7 +1306,7 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_time_ms(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1361,7 +1361,7 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_temp(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1413,7 +1413,7 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_status_gnss(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1470,7 +1470,7 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_status_imu(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1545,7 +1545,7 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_status_operation(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1611,7 +1611,6 @@ class Test_Scripts:
 
     def IMU_data_packet_reasonable_check_week(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1667,7 +1666,6 @@ class Test_Scripts:
 
     def IMU_data_packet_reasonable_check_ms(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1731,7 +1729,7 @@ class Test_Scripts:
 
     def IMU_data_packet_reasonable_check_accel(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1777,7 +1775,7 @@ class Test_Scripts:
 
     def IMU_data_packet_reasonable_check_gyro(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1822,7 +1820,7 @@ class Test_Scripts:
 
     def NMEA_GNGGA_data_packet_check_ID_GNGGA(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1865,7 +1863,7 @@ class Test_Scripts:
 
     def NMEA_GNGGA_data_packet_check_utc_time(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1922,7 +1920,7 @@ class Test_Scripts:
         gngga_lat_dev_p = self.properties["NMEA"]["latitude_dev"]
         gngga_lat_dir_p = self.properties["NMEA"]["latitude_dir"]
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1966,7 +1964,7 @@ class Test_Scripts:
         gngga_lon_dev_p = self.properties["NMEA"]["longitude_dev"]
         gngga_lon_dir_p = self.properties["NMEA"]["longitude_dir"]
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -2008,7 +2006,7 @@ class Test_Scripts:
     def NMEA_GNGGA_data_packet_check_position_type(self):
         position_type_p = self.properties["NMEA"]["position type"]
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -2026,7 +2024,7 @@ class Test_Scripts:
             if packet_start_flag == 0:
                 parse_data = str(data, 'utf-8')
                 gngga_list.append(parse_data)
-        self.uut.stop_listen_data()
+        #self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -2049,7 +2047,7 @@ class Test_Scripts:
 
     def NMEA_GNZDA_data_packet_check_ID_GNZDA(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
+        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -2090,7 +2088,6 @@ class Test_Scripts:
 
     def NMEA_GNZDA_data_packet_check_utc_time(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
