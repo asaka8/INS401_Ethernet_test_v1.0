@@ -947,6 +947,7 @@ class Test_Scripts:
                 continue
             else:
                 pos_err_list.append(pos_list[i])
+                print(f'error: pos = {pos_list[i]}')
 
         if len(pos_list) == 0:
             return False, f'no GNSS packets', 'could capture GNSS packets'
@@ -977,13 +978,14 @@ class Test_Scripts:
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append(parse_data_lst[9])
-                print(parse_data_lst[9], parse_data_lst[10])
+                #print(parse_data_lst[9], parse_data_lst[10])
 
         for i in range(len(sat_list)):
             if sat_list[i] >= 16:
                 continue
             else:
                 sat_err_list.append(sat_list[i])
+                print(f'error: num of satellites={sat_list[i]}  <16')
 
         if len(sat_list) == 0:
             return False, f'no GNSS packets', 'could capture GNSS packets'
@@ -1284,9 +1286,9 @@ class Test_Scripts:
                 gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
                 gps_secs_lst.append(gps_sec)
                 time_diff = cal_time_diff(gps_secs_lst[i], REAL_CAP_START_TIME)
-                print(f'real time - gps time = {time_diff}')
                 if time_diff > (0-i) or time_diff < (-2-i):
                     unmatch_time_count = unmatch_time_count + 1
+                    print(f'error: real time - gps time = {time_diff+i}')
 
         if len(gps_week_list) == 0:
             return False, f'no DM packets', 'could capture DM packets'
@@ -1337,6 +1339,7 @@ class Test_Scripts:
                                 continue
                             else:
                                 gps_interval_err_lst.append([i+2,time_interval])
+                                print(f'error: interval = {time_interval}')
                     else:
                         gps_signal_loss = gps_signal_loss + 1    
             if gps_week_list[-1] < 2232:
@@ -1376,7 +1379,7 @@ class Test_Scripts:
                 IMU_temp = parse_data_lst[3]
                 MCU_temp = parse_data_lst[4]
                 GNSS_chip_temp = parse_data_lst[5]
-                print(f'IMU = {IMU_temp}, MCU = {MCU_temp}, GNSS = {GNSS_chip_temp}')
+                #print(f'IMU = {IMU_temp}, MCU = {MCU_temp}, GNSS = {GNSS_chip_temp}')
                 temp_list.append([IMU_temp,MCU_temp,GNSS_chip_temp])
 
         if len(temp_list) == 0:
@@ -1392,10 +1395,13 @@ class Test_Scripts:
                         continue
                     else:
                         gnss_out = gnss_out +1
+                        print(f'error: GNSS = {GNSS_chip_temp} out of 40-85')
                 else:
                     mcu_out = mcu_out +1
+                    print(f'error: MCU = {MCU_temp} out of 40-85')
             else:
                 imu_out = imu_out +1
+                print(f'error: IMU = {IMU_temp} out of 40-85')
         
         if len(temp_list) == 0:
             return False, 'no DM packets', 'could capture DM packets'
@@ -1403,7 +1409,7 @@ class Test_Scripts:
             if imu_out + mcu_out + gnss_out == 0:
                 return True, 'Temperature of IMU/MCU/GNSS chip is in reasonable range', '-40 < temp <85'
             else:
-                return False, f'amount out of temp range: IMU={imu_out},MCU={mcu_out},GNSS={gnss_out}', '-40 < temp <85'
+                return False, f'amount out of temp range: IMU={imu_out}/{len(temp_list)},MCU={mcu_out}/{len(temp_list)},GNSS={gnss_out}/{len(temp_list)}', '-40 < temp <85'
 
     def DM_packet_reasonable_check_status_gnss(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
@@ -1434,19 +1440,19 @@ class Test_Scripts:
                 #GNSS signal status = bit12
                 pps_list.append(dev_status_bin[21])
                 if pps_list[-1] == '1':
-                    print('1PPS pulse exception ', end=' || ')
+                    print('error: PPS=1, PPS pulse exception ', end=' || ')
                 elif pps_list[-1] == '0':
-                    print('PPS normal ', end=' || ')
+                    pass
                 gnss_data_list.append(dev_status_bin[20])
                 if gnss_data_list[-1] == '1':
-                    print('GNSS chipset has NO data output', end=' || ')
+                    print('error: GNSS data status=1, GNSS chipset has NO data output', end=' || ')
                 elif gnss_data_list[-1] == '0':
-                    print('GNSS data normal', end=' || ')
+                    pass
                 gnss_signal_list.append(dev_status_bin[19])
                 if gnss_signal_list[-1] == '1':
-                    print(' GNSS chipset has data output, but no valid signal detected')
+                    print('error: GNSS signal status=1, GNSS chipset has data output, but no valid signal detected')
                 elif gnss_signal_list[-1] == '0':
-                    print('GNSS signal normal')
+                    pass
         if len(pps_list) == 0:
             print('no DM packets!')
 
@@ -1503,9 +1509,9 @@ class Test_Scripts:
                 gyro_deg_err_list.append(dev_status_bin[25])
                 forced_restart_list.append(dev_status_bin[24])
                 if forced_restart_list[-1] == '1':
-                    print('forced restart = 1')
+                    print('error: Forced restart = 1')
                 elif forced_restart_list[-1] == '0':
-                    print('forced restart = 0 normal')
+                    pass
                 crc_err_list.append(dev_status_bin[23])
                 tx_overflow_err_list.append(dev_status_bin[22])
         if len(master_fail_list) == 0:
@@ -1594,10 +1600,10 @@ class Test_Scripts:
             return False, 'no DM packets', 'could capture DM packets'
         else:
             if count_total > 0:
-                return False, f'Operation status error! Power fail={power_count},mcu error={mcu_count}\
-,Temperature under MCU flag={temp_u_mcu_count},Temperature under STA flag={temp_u_sta_count},Temperature under IMU flag={temp_u_imu_count}\
-,Temperature over MCU flag={temp_o_mcu_count},Temperature over STA flag ={temp_o_sta_count}\
-,Temperature over IMU flag={temp_o_imu_count}'
+                return False, f'Operation status error! Power fail={power_count}/{len(power_list)},mcu error={mcu_count}/{len(mcu_list)}\
+,Temperature under MCU flag={temp_u_mcu_count}/{len(temp_u_mcu_list)},Temperature under STA flag={temp_u_sta_count}/{len(temp_u_sta_list)}\
+,Temperature under IMU flag={temp_u_imu_count}/{len(temp_u_imu_list)},Temperature over MCU flag={temp_o_mcu_count}/{len(temp_o_mcu_list)}\
+,Temperature over STA flag ={temp_o_sta_count}/{len(temp_o_sta_list)},Temperature over IMU flag={temp_o_imu_count}/{len(temp_o_imu_list)}'
             else:
                 return True, 'IMU status is always 0', 'IMU status is always 0'
 
@@ -2031,6 +2037,7 @@ class Test_Scripts:
                 continue
             else:
                 unmatch_pos_list.append(gngga_position_type)
+                print(f'error: pos = {gngga_position_type}')
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
