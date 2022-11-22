@@ -784,7 +784,7 @@ class Test_Scripts:
     def static_test_setup(self):
         global REAL_CAP_START_TIME
         static_run_time = self.properties["static test"]["STATIC_RUNNING_TIME"]
-        filter_type = self.properties["static test"]["TypeFilter"]
+        #filter_type = self.properties["static test"]["TypeFilter"]
         # logf_name = f'./data/static_test_data/{self.product_sn}_{self.test_time}/static_test_data_{self.test_time}.bin' 
         # logf_name = f'./data/Packet_long_term_test_data/long_terms_data_{self.test_time}.pcap' 
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
@@ -798,8 +798,8 @@ class Test_Scripts:
         ntrip_thread.start()
 
         start_time = time.time()
-        self.uut.start_listen_data(filter_type)
-        self.uut.reset_buffer()    
+        self.uut.start_listen_data()
+        self.uut.reset_buffer()
         REAL_CAP_START_TIME = get_curr_time()    
         self.tlock.acquire()    
         while time.time() - start_time <= static_run_time:
