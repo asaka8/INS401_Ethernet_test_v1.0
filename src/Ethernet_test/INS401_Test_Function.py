@@ -977,7 +977,7 @@ class Test_Scripts:
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 sat_list.append(parse_data_lst[9])
-                #print(parse_data_lst[9], parse_data_lst[10])
+                print(parse_data_lst[9], parse_data_lst[10])
 
         for i in range(len(sat_list)):
             if sat_list[i] >= 16:
@@ -1824,10 +1824,10 @@ class Test_Scripts:
         gngga_list = []
         gngga_id_err_list = []
         for i in range(len(log_data)):
-            data = log_data[i:i+82]
+            data = log_data[i:i+83]
             packet_start_flag = data.find(bytes(GNGGA_packet_type))
             if packet_start_flag == 0:
-                parse_data = str(data[0:82], 'utf-8')
+                #parse_data = str(data[0:83], 'utf-8')
                 parse_data = str(data[0:37], 'utf-8')
                 gngga_list.append(parse_data)
                 #print(parse_data)
@@ -1868,7 +1868,7 @@ class Test_Scripts:
         gngga_utc_err_list = []
         unmatch_time_list = []
         for i in range(len(log_data)):
-            data = log_data[i:i+82]
+            data = log_data[i:i+83]
             packet_start_flag = data.find(bytes(GNGGA_packet_type))
             if packet_start_flag == 0:
                 parse_data = str(data, 'utf-8')
@@ -1882,16 +1882,14 @@ class Test_Scripts:
             minute = int(gngga_utc_list[i][2:4])
             second = int(gngga_utc_list[i][4:6])
             ms = int(gngga_utc_list[i][7:9])
-            hour_real = real_time_list[i].hour
-            minute_real = real_time_list[i].minute
-            second_real = real_time_list[i].second
-            microsec_real = real_time_list[i].microsecond
-            time_diff = (second_real*1000+microsec_real/1000)-(second*1000+ms*100)
-            if minute_real == minute:
-                if abs(time_diff) < 1000:
-                    continue
-                else:
-                    unmatch_time_list.append(gngga_list[i])
+            hour_real = REAL_CAP_START_TIME.hour
+            minute_real = REAL_CAP_START_TIME.minute
+            second_real = REAL_CAP_START_TIME.second
+            microsec_real = REAL_CAP_START_TIME.microsecond
+            time_diff = ((minute_real*60+second_real)*1000+microsec_real/1000)-((minute*60+second)*1000+ms*100)+i*1000
+            #print(time_diff, '||', REAL_CAP_START_TIME, '|| ', hour, minute, second, ms)
+            if abs(time_diff) < 1000:
+                continue
             else:
                 unmatch_time_list.append(gngga_utc_list[i])
 
@@ -1920,11 +1918,14 @@ class Test_Scripts:
         gngga_list = []
         unmatch_lat_list = []
         for i in range(len(log_data)):
-            data = log_data[i:i+82]
+            data = log_data[i:i+83]
             packet_start_flag = data.find(bytes(GNGGA_packet_type))
             if packet_start_flag == 0:
-                parse_data = str(data, 'utf-8')
-                gngga_list.append(parse_data)
+                packet_end_flag = data.find(bytes([0x2A]))
+                if packet_end_flag > 0:
+                    data_new = data[:packet_end_flag+3]
+                    parse_data = str(data_new, 'utf-8')
+                    gngga_list.append(parse_data)
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -1964,11 +1965,15 @@ class Test_Scripts:
         gngga_list = []
         unmatch_lat_list = []
         for i in range(len(log_data)):
-            data = log_data[i:i+82]
+            data = log_data[i:i+83]
             packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            packet_end_flag = data.find(bytes(0x2A))
             if packet_start_flag == 0:
-                parse_data = str(data, 'utf-8')
-                gngga_list.append(parse_data)
+                packet_end_flag = data.find(bytes([0x2A]))
+                if packet_end_flag > 0:
+                    data_new = data[:packet_end_flag+3]
+                    parse_data = str(data_new, 'utf-8')
+                    gngga_list.append(parse_data)
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -2006,11 +2011,15 @@ class Test_Scripts:
         gngga_list = []
         unmatch_pos_list = []
         for i in range(len(log_data)):
-            data = log_data[i:i+82]
+            data = log_data[i:i+83]
             packet_start_flag = data.find(bytes(GNGGA_packet_type))
+            packet_end_flag = data.find(bytes(0x2A))
             if packet_start_flag == 0:
-                parse_data = str(data, 'utf-8')
-                gngga_list.append(parse_data)
+                packet_end_flag = data.find(bytes([0x2A]))
+                if packet_end_flag > 0:
+                    data_new = data[:packet_end_flag+3]
+                    parse_data = str(data_new, 'utf-8')
+                    gngga_list.append(parse_data)
         #self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
