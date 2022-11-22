@@ -1892,7 +1892,7 @@ class Test_Scripts:
             minute_real = REAL_CAP_START_TIME.minute
             second_real = REAL_CAP_START_TIME.second
             microsec_real = REAL_CAP_START_TIME.microsecond
-            time_diff = ((minute_real*60+second_real)*1000+microsec_real/1000)-((minute*60+second)*1000+ms*100)+i*1000
+            time_diff = ((hour_real*3600)*1000+(minute_real*60+second_real)*1000+microsec_real/1000)-(((hour+8)*3600)*1000+(minute*60+second)*1000+ms*100)+i*1000
             #print(time_diff, '||', REAL_CAP_START_TIME, '|| ', hour, minute, second, ms)
             if abs(time_diff) < 1000:
                 continue
