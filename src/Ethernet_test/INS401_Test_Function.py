@@ -8,7 +8,7 @@ import threading
 from tqdm import trange
 from ..conmunicator.INS401_Ethernet import Ethernet_Dev
 from ..conmunicator.ntrip_center import *
-from moudle.gps_time_module import get_curr_time, gps_time, cal_time_diff, stamptime_to_datetime
+from moudle.gps_time_module import get_curr_time, gps_time, cal_time_diff, stamptime_to_datetime, datetime_to_gps_week_seconds
 from moudle.nmea_module import *
 from ..test_framwork.Jsonf_Creater import Json_Creat
 from ..test_framwork.Test_Logger import TestLogger
@@ -19,7 +19,6 @@ OTHER_OUTPUT_PACKETS = [b'\x01\n', b'\x02\n', b'\x03\n', b'\x04\n', b'\x05\n', b
 rtcm_data = [1, 2, 3, 4, 5, 6, 7, 8]
 vehicle_speed_value = 80
 LONGTERM_RUNNING_COUNT = 10000
-REAL_CAP_START_TIME = None
 
 class Test_Scripts:
     uut = None
@@ -782,7 +781,6 @@ class Test_Scripts:
     ### section7 GNSS packet reasonable check (connect antenna)
 
     def static_test_setup(self):
-        global REAL_CAP_START_TIME
         static_run_time = self.properties["static test"]["STATIC_RUNNING_TIME"]
         filter_type = self.properties["static test"]["TypeFilter"]
         # logf_name = f'./data/static_test_data/{self.product_sn}_{self.test_time}/static_test_data_{self.test_time}.bin' 
@@ -800,7 +798,6 @@ class Test_Scripts:
         start_time = time.time()
         self.uut.start_listen_data(filter_type)
         self.uut.reset_buffer()    
-        REAL_CAP_START_TIME = get_curr_time()    
         self.tlock.acquire()    
         while time.time() - start_time <= static_run_time:
             data = self.uut.read_data()
@@ -830,39 +827,31 @@ class Test_Scripts:
  
         gps_week_list = []
         gps_ms_list = []
-        gps_secs_lst = []
-        unmatch_time_count = 0
+        real_time_list = []
+        unmatch_week_count = 0
         gps_signal_loss = 0
         for i in range(len(log_data)):
             data = log_data[i:i+87]
             packet_start_flag = data.find(bytes(gnss_packet_type))
+            real_time = get_curr_time()
             if packet_start_flag == 0:
                 parse_data = data[8:-2]
                 fmt = '<HIBdddfffBBffffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
                 gps_ms_list.append(parse_data_lst[1])
+                real_time_list.append(real_time)
         
         for i in range(len(gps_week_list)):
-            if gps_week_list[i] < 2232:
-                gps_signal_loss = gps_signal_loss + 1
-            else:
-                gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
-                gps_secs_lst.append(gps_sec)
-                time_diff = cal_time_diff(gps_secs_lst[i], REAL_CAP_START_TIME)
-                #print(f'real time - gps time = {time_diff}')
-                if (-2-i) > time_diff or time_diff > (0-i):
-                    unmatch_time_count = unmatch_time_count + 1
+            curr_gps_week = datetime_to_gps_week_seconds(get_curr_time())[0]
+            if gps_week_list[i] != curr_gps_week:
+                unmatch_week_count += 1
 
-        if len(gps_week_list) == 0:
-            return False, f'no GNSS packets', 'could capture GNSS packets'
-        else:
-            if unmatch_time_count == 0 and gps_signal_loss != len(gps_week_list):
-                return True, f'number of unmatch real time = {unmatch_time_count}, packets have GNSS time = {len(gps_week_list)-gps_signal_loss}', 'match real time <1s'
-            elif unmatch_time_count == 0 and gps_signal_loss == len(gps_week_list):
-                return False, f'packets have GNSS time = {len(gps_week_list)-gps_signal_loss}, GNSS packets = {len(gps_week_list)} ', 'at last one GNSS packet has GPS time'
-            else:
-                return False, f'number of unmatch real time = {unmatch_time_count}, no GNSS singal = {gps_signal_loss}', 'match real time, <1s'
+        if unmatch_week_count == 0:
+            return True, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+        elif unmatch_week_count == 0 and gps_signal_loss == len(gps_week_list):
+            return False, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+           
 
     def GNSS_packet_reasonable_check_time_ms(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
@@ -1044,9 +1033,7 @@ class Test_Scripts:
         ins_packet_type = [0x55, 0x55, 0x03, 0x0a]
 
         gps_week_list = []
-        gps_ms_list = []
-        gps_secs_lst = []
-        unmatch_time_count = 0
+        unmatch_week_count = 0
         gps_signal_loss = 0
         for i in range(len(log_data)):
             data = log_data[i:i+120]
@@ -1056,29 +1043,17 @@ class Test_Scripts:
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
-                gps_ms_list.append(parse_data_lst[1])
         
         for i in range(len(gps_week_list)):
-            if gps_week_list[i] < 2232:
-                gps_signal_loss = gps_signal_loss +1
-            else:
-                gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
-                gps_secs_lst.append(gps_sec)
-                time_diff = cal_time_diff(gps_secs_lst[i], REAL_CAP_START_TIME)
-                #print(f'real time - gps time = {time_diff}')
-                if time_diff > (0-i/100) or time_diff < (-2-i/100):
-                    unmatch_time_count = unmatch_time_count + 1
+            curr_gps_week = datetime_to_gps_week_seconds(get_curr_time())[0]
+            if gps_week_list[i] != curr_gps_week:
+                unmatch_week_count += 1
 
-        if len(gps_week_list) == 0:
-            return False, f'no INS packets', 'could capture INS packets'
-        else:
-            if unmatch_time_count == 0 and gps_signal_loss != len(gps_week_list):
-                return True, f'number of unmatch real time = {unmatch_time_count}, packets have GNSS time = {len(gps_week_list)-gps_signal_loss}', 'match real time <1s'
-            elif unmatch_time_count == 0 and gps_signal_loss == len(gps_week_list):
-                return False, f'packets have GNSS time = {len(gps_week_list)-gps_signal_loss}, INS packets = {len(gps_week_list)} ', 'at last one INS packet has GPS time'
-            else:
-                return False, f'number of unmatch real time = {unmatch_time_count}, no INS singal = {gps_signal_loss}', 'match real time, <1s'
-
+        if unmatch_week_count == 0:
+            return True, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+        elif unmatch_week_count == 0 and gps_signal_loss == len(gps_week_list):
+            return False, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+           
     def INS_packet_reasonable_check_time_ms(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
 
@@ -1151,7 +1126,7 @@ class Test_Scripts:
             packet_start_flag = data.find(bytes(ins_packet_type))
             if packet_start_flag == 0:
                 parse_data = data[8:-2]
-                #parse_data = data[8:8+110]
+                parse_data = data[8:8+110]
                 fmt = '<HIBBdddfffffffffffffffffffH'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 pos_list.append(parse_data_lst[2])
@@ -1167,13 +1142,12 @@ class Test_Scripts:
             return False, f'no INS packets', 'could capture INS packets'
         else:
             if len(pos_list) - len(pos_err_list) <= 0:
-                return False, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static test pos = 0'
+                return False, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static = 0'
             else:
-                return True, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static test pos = 0 '
+                return True, f'position type not converges to 4, pos=0: {len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type not converges to 4, static = 0 '
 
     def INS_packet_reasonable_check_status(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1204,13 +1178,12 @@ class Test_Scripts:
             return False, f'no INS packets', 'could capture INS packets'
         else:
             if len(pos_err_list) > 0:
-                return False, f'INS status type can not converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'INS status type can converges to 0 '
+                return False, f'INS status type can not converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
             else:
-                return True, f'INS status type can converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'INS status type can converges to 0 '
+                return True, f'INS status type can converges to 0, pos=4:{len(pos_list)-len(pos_err_list)}/{len(pos_list)} ', 'position type can converges to 4 '
 
     def INS_packet_reasonable_check_continent_ID(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1252,7 +1225,6 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_week(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1263,44 +1235,30 @@ class Test_Scripts:
         dm_packet_type = [0x55, 0x55, 0x05, 0x0a]
 
         gps_week_list = []
-        gps_ms_list = []
-        gps_secs_lst = []
-        unmatch_time_count = 0
+        curr_gps_week = datetime_to_gps_week_seconds(get_curr_time())[0]
+        unmatch_week_count = 0
         gps_signal_loss = 0
         for i in range(len(log_data)):
             data = log_data[i:i+32]
             packet_start_flag = data.find(bytes(dm_packet_type))
+            real_time = get_curr_time()
             if packet_start_flag == 0:
                 parse_data = data[8:-2]
                 fmt = '<HIIfff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 gps_week_list.append(parse_data_lst[0])
-                gps_ms_list.append(parse_data_lst[1])
         
         for i in range(len(gps_week_list)):
-            if gps_week_list[i] < 2232:
-                gps_signal_loss = gps_signal_loss +1
-            else:
-                gps_sec = gps_time(gps_week_list[i], gps_ms_list[i]/1000)
-                gps_secs_lst.append(gps_sec)
-                time_diff = cal_time_diff(gps_secs_lst[i], REAL_CAP_START_TIME)
-                print(f'real time - gps time = {time_diff}')
-                if time_diff > (0-i) or time_diff < (-2-i):
-                    unmatch_time_count = unmatch_time_count + 1
+            if gps_week_list[i] != curr_gps_week:
+                unmatch_week_count += 1
 
-        if len(gps_week_list) == 0:
-            return False, f'no DM packets', 'could capture DM packets'
-        else:
-            if unmatch_time_count == 0 and gps_signal_loss != len(gps_week_list):
-                return True, f'number of unmatch real time = {unmatch_time_count}, packets have gps time = {len(gps_week_list)-gps_signal_loss}', 'match real time <1s'
-            elif unmatch_time_count == 0 and gps_signal_loss == len(gps_week_list):
-                return False, f'packets have gps time = {len(gps_week_list)-gps_signal_loss}, DM packets = {len(gps_week_list)} ', 'at last one DM packet has GPS time'
-            else:
-                return False, f'number of unmatch real time = {unmatch_time_count}/{len(gps_week_list)}, no gps singal = {gps_signal_loss}/{len(gps_week_list)}', 'match real time <1s'
-
+        if unmatch_week_count == 0:
+            return True, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+        elif unmatch_week_count == 0 and gps_signal_loss == len(gps_week_list):
+            return False, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+ 
     def DM_packet_reasonable_check_time_ms(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1314,7 +1272,6 @@ class Test_Scripts:
         gps_ms_list = []
         gps_interval_err_lst = []
         gps_signal_loss = 0
-        num_interval_err = 0
         neighbor_gps_pair = 0
         for i in range(len(log_data)):
             data = log_data[i:i+32]
@@ -1333,7 +1290,7 @@ class Test_Scripts:
                         if gps_week_list[i+1] >=2232:
                             time_interval = gps_ms_list[i+1] - gps_ms_list[i]
                             neighbor_gps_pair = neighbor_gps_pair +1
-                            if time_interval == 1000:
+                            if time_interval >= 999 and time_interval <= 1001:
                                 continue
                             else:
                                 gps_interval_err_lst.append([i+2,time_interval])
@@ -1355,7 +1312,6 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_temp(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1407,7 +1363,6 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_status_gnss(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1464,7 +1419,6 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_status_imu(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1539,7 +1493,6 @@ class Test_Scripts:
 
     def DM_packet_reasonable_check_status_operation(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1601,7 +1554,7 @@ class Test_Scripts:
             else:
                 return True, 'IMU status is always 0', 'IMU status is always 0'
 
-    ### section11 INS packet reasonable check (connect antenna)
+    ### section11 IMU packet reasonable check (connect antenna)
 
     def IMU_data_packet_reasonable_check_week(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
@@ -1614,46 +1567,35 @@ class Test_Scripts:
         log_data = logf.read()
         imu_packet_type = [0x55, 0x55, 0x01, 0x0a]
 
-        imu_week_list = []
+        gps_week_list = []
         imu_ms_list = []
-        imu_gps_time = []
-        unmatch_time_count = 0
+        real_time_list = []
+        curr_gps_week = datetime_to_gps_week_seconds(get_curr_time())[0]
+        unmatch_week_count = 0
         gps_signal_loss = 0
         for i in range(len(log_data)):
+            real_time = get_curr_time()
             data = log_data[i:i+40]
             packet_start_flag = data.find(bytes(imu_packet_type))
             if packet_start_flag == 0:
                 parse_data = data[8:-2]
                 fmt = '<HIffffff'
                 parse_data_lst = struct.unpack(fmt, parse_data)
-                imu_week_list.append(parse_data_lst[0])
+                gps_week_list.append(parse_data_lst[0])
                 imu_ms_list.append(parse_data_lst[1])
-        if len(imu_week_list) == 0:
+                real_time_list.append(real_time)
+        if len(gps_week_list) == 0:
             print('no Raw IMU packets!')
 
-        for i in range(len(imu_week_list)):
-            if imu_week_list[i] < 2232:
-                gps_signal_loss = gps_signal_loss +1
-            else:
-                gps_sec = gps_time(imu_week_list[i], imu_ms_list[i]/1000)
-                imu_gps_time.append(gps_sec)
-                time_diff = cal_time_diff(gps_sec, REAL_CAP_START_TIME)
-                #print(f'real time - gps time = {time_diff}')
-                if time_diff > (0-i/100) or time_diff < (-2-i/100):
-                    unmatch_time_count = unmatch_time_count + 1
+        for i in range(len(gps_week_list)):
+            if gps_week_list[i] != curr_gps_week:
+                unmatch_week_count += 1
 
-        if len(imu_week_list) == 0:
-            return False, f'no IMU packets', 'could capture IMU packets'
-        else:
-            if unmatch_time_count == 0 and gps_signal_loss != len(imu_week_list):
-                return True, f'number of unmatch real time = {unmatch_time_count}/{len(imu_week_list)}, packets have gps time \
-= {len(imu_week_list)-gps_signal_loss}/len(imu_week_list)', 'match real time <1s'
-            elif unmatch_time_count == 0 and gps_signal_loss == len(imu_week_list):
-                return False, f'packets have gps time = {len(imu_week_list)-gps_signal_loss}/{len(imu_week_list)}, DM packets \
-= {len(imu_week_list)} ', 'at last one DM packet has GPS time'
-            else:
-                return False, f'number of unmatch real time = {unmatch_time_count}/{len(imu_week_list)}, no gps singal \
-= {gps_signal_loss}/{len(imu_week_list)}', 'match real time, <1s'
+        if unmatch_week_count == 0:
+            return True, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+        elif unmatch_week_count == 0 and gps_signal_loss == len(gps_week_list):
+            return False, f'number of unmatch real gps week = {unmatch_week_count}', f'match real gps week {curr_gps_week}'
+           
 
     def IMU_data_packet_reasonable_check_ms(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
@@ -1668,10 +1610,12 @@ class Test_Scripts:
 
         imu_week_list = []
         imu_ms_list = []
+        real_time_list = []
         neighbor_gps_pair = 0
         gps_signal_loss = 0
         num_interval_err = 0
         for i in range(len(log_data)):
+            real_time = get_curr_time()
             data = log_data[i:i+40]
             packet_start_flag = data.find(bytes(imu_packet_type))
             if packet_start_flag == 0:
@@ -1680,6 +1624,7 @@ class Test_Scripts:
                 parse_data_lst = struct.unpack(fmt, parse_data)
                 imu_week_list.append(parse_data_lst[0])
                 imu_ms_list.append(parse_data_lst[1])
+                real_time_list.append(real_time)
         if len(imu_week_list) == 0:
             print('no Raw IMU packets!')
 
@@ -1717,7 +1662,6 @@ class Test_Scripts:
 
     def IMU_data_packet_reasonable_check_accel(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1748,14 +1692,11 @@ class Test_Scripts:
             s2 = math.pow(imu_accel_x_list[i],2) + math.pow(imu_accel_y_list[i],2) + math.pow(imu_accel_z_list[i],2)
             accel_mod_value = math.pow(s2, 1/2)
             #accel_mod_value = abs(imu_accel_x_list[i]) + abs(imu_accel_y_list[i]) + abs(imu_accel_z_list[i])
-            if abs(accel_mod_value) < 9.7:
-                print(f'error: sum<9.7 sum={accel_mod_value}={imu_accel_x_list[i]}+{imu_accel_y_list[i]}+{imu_accel_z_list[i]}')
-                accel_mod_err_list.append([imu_accel_x_list[i],imu_accel_y_list[i],imu_accel_z_list[i]])
-            elif abs(accel_mod_value) > 9.9:
-                print(f'error: sum>9.9 sum={accel_mod_value}={imu_accel_x_list[i]}+{imu_accel_y_list[i]}+{imu_accel_z_list[i]}')
-                accel_mod_err_list.append([imu_accel_x_list[i],imu_accel_y_list[i],imu_accel_z_list[i]])
-            else:
+            if 9.7 < abs(accel_mod_value) < 9.9:
                 continue
+            else:
+                print(imu_accel_x_list[i],imu_accel_y_list[i],imu_accel_z_list[i])
+                accel_mod_err_list.append([imu_accel_x_list[i],imu_accel_y_list[i],imu_accel_z_list[i]])
 
         if len(imu_accel_x_list) == 0:
             return False, f'no Raw IMU packets', 'could capture Raw IMU packets'
@@ -1766,7 +1707,6 @@ class Test_Scripts:
 
     def IMU_data_packet_reasonable_check_gyro(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1811,7 +1751,6 @@ class Test_Scripts:
 
     def NMEA_GNGGA_data_packet_check_ID_GNGGA(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1854,7 +1793,6 @@ class Test_Scripts:
 
     def NMEA_GNGGA_data_packet_check_utc_time(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1866,33 +1804,27 @@ class Test_Scripts:
 
         gngga_utc_list = []
         gngga_utc_err_list = []
+        real_time_list = []
         unmatch_time_list = []
         for i in range(len(log_data)):
             data = log_data[i:i+82]
             packet_start_flag = data.find(bytes(GNGGA_packet_type))
             if packet_start_flag == 0:
+                real_time = get_curr_time()
                 parse_data = str(data, 'utf-8')
                 gngga_list = parse_data.split(",")
                 gngga_utc_list.append(gngga_list[1])
+                real_time_list.append(real_time)
         if len(gngga_utc_list) == 0:
             print('no NMEA GNGGA packets!')
 
         for i in range(len(gngga_utc_list)):
-            hour = int(gngga_utc_list[i][0:2])
+            print(gngga_utc_list[i])
+            hour = int(gngga_utc_list[i][0:2]) + 8
             minute = int(gngga_utc_list[i][2:4])
-            second = int(gngga_utc_list[i][4:6])
-            ms = int(gngga_utc_list[i][7:9])
             hour_real = real_time_list[i].hour
             minute_real = real_time_list[i].minute
-            second_real = real_time_list[i].second
-            microsec_real = real_time_list[i].microsecond
-            time_diff = (second_real*1000+microsec_real/1000)-(second*1000+ms*100)
-            if minute_real == minute:
-                if abs(time_diff) < 1000:
-                    continue
-                else:
-                    unmatch_time_list.append(gngga_list[i])
-            else:
+            if minute_real != minute or hour_real != hour:
                 unmatch_time_list.append(gngga_utc_list[i])
 
         if len(gngga_utc_list) == 0:
@@ -1907,7 +1839,6 @@ class Test_Scripts:
         gngga_lat_dev_p = self.properties["NMEA"]["latitude_dev"]
         gngga_lat_dir_p = self.properties["NMEA"]["latitude_dir"]
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1951,7 +1882,6 @@ class Test_Scripts:
         gngga_lon_dev_p = self.properties["NMEA"]["longitude_dev"]
         gngga_lon_dir_p = self.properties["NMEA"]["longitude_dir"]
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -1993,7 +1923,6 @@ class Test_Scripts:
     def NMEA_GNGGA_data_packet_check_position_type(self):
         position_type_p = self.properties["NMEA"]["position type"]
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -2011,7 +1940,6 @@ class Test_Scripts:
             if packet_start_flag == 0:
                 parse_data = str(data, 'utf-8')
                 gngga_list.append(parse_data)
-        #self.uut.stop_listen_data()
         if len(gngga_list) == 0:
             print('no NMEA GNGGA packets!')
 
@@ -2025,7 +1953,7 @@ class Test_Scripts:
 
         if len(gngga_list) == 0:
             return False, f'no NMEA GNGGA packets!', 'could capture NMEA GNGGA packets'
-        elif len(unmatch_pos_list) > 0:
+        elif len(unmatch_pos_list)/len(gngga_list) > 0.5:
             return False, f'position type can not converges to 4, unmatch count={len(unmatch_pos_list)}/{len(gngga_list)}', 'position type in GNGGA can converges to 4'
         else:
             return True, f'position type in GNGGA can converges to 4', 'position type in GNGGA can converges to 4(RTK_fixed)'
@@ -2034,7 +1962,6 @@ class Test_Scripts:
 
     def NMEA_GNZDA_data_packet_check_ID_GNZDA(self):
         logf_name = f'./data/static_test_data/static_test_data_{self.test_time}.bin'
-        #self.test_log.creat_binf_sct7(logf_name)
 
         if not os.path.exists(logf_name):
             self.static_test_setup()
@@ -2085,8 +2012,10 @@ class Test_Scripts:
         GNZDA_packet_type = [0x47, 0x4E, 0x5A, 0x44, 0x41]
 
         gngga_list = []
+        real_time_list = []
         unmatch_time_list = []
         for i in range(len(log_data)):
+            real_time = get_curr_time()
             data = log_data[i:i+37]
             packet_start_flag = data.find(bytes(GNZDA_packet_type))
             if packet_start_flag == 0:
@@ -2094,17 +2023,18 @@ class Test_Scripts:
                 #gngga_list = parse_data.split(",")
                 #gngga_utc_list.append(gngga_list[1])
                 gngga_list.append(parse_data)
+                real_time_list.append(real_time)
         if len(gngga_list) == 0:
             print('no NMEA GNZDA packets!')
 
         for i in range(len(gngga_list)):
             datetime_zda = get_zda_utc(gngga_list[i])
             #print(f'gnzda utc = {datetime_zda}')
-            time_now = REAL_CAP_START_TIME
+            time_now = real_time_list[i]
             #print(f'local time = {time_now}')
             time_diff = float(time_now.timestamp()) - datetime_zda.timestamp()
             #print(time_diff)
-            if (-2-i) < time_diff < (0-i):
+            if -1 < time_diff < 1:
                 continue
             else:
                 unmatch_time_list.append(gngga_list[i])
