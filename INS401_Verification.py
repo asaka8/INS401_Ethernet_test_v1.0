@@ -30,10 +30,9 @@ def main():
     print("##########  Results   #####################################\n")
     env.print_results()
 
-    file_name = f'./result/test_results_{str(serial_number)}_{str(version)}.csv'
+    file_name = f'./result/test_results_{str(serial_number)}_{str(version)}.xlsx'
     env.log_results(file_name)
 
 
 if __name__ == "__main__":
-
     main()
