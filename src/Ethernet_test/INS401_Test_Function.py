@@ -1550,7 +1550,7 @@ class Test_Scripts:
                 return False, f'Operation status error! Power fail={power_count},mcu error={mcu_count}\
 ,Temperature under MCU flag={temp_u_mcu_count},Temperature under STA flag={temp_u_sta_count},Temperature under IMU flag={temp_u_imu_count}\
 ,Temperature over MCU flag={temp_o_mcu_count},Temperature over STA flag ={temp_o_sta_count}\
-,Temperature over IMU flag={temp_o_imu_count}'
+,Temperature over IMU flag={temp_o_imu_count}', 'IMU status is always 0'
             else:
                 return True, 'IMU status is always 0', 'IMU status is always 0'
 
