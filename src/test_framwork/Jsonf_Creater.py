@@ -86,8 +86,8 @@ JSON_DATA = {
         }    
     },
     "long term test":{
-        "LONGTERM_RUNNING_COUNT": 10000,
-        "LONGTERM_RUNNING_TIME": 180,
+        "LONGTERM_RUNNING_COUNT": 1000,
+        "LONGTERM_RUNNING_TIME": 60,
         "TypeFilter": [0x010a, 0x020a, 0x030a, 0x050a]
     },
     "static test":{
