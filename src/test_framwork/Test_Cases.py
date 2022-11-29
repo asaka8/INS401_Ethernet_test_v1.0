@@ -18,9 +18,15 @@ class Test_Section:
         print(str(self.section_id) + ". " + self.section_name + "\r\n")
         counter = 0
         for test in self.test_cases:
-            #self.result = test.run()
             counter = counter + 1
-            id = str(self.section_id) + "." + str(counter) + ". "
+            caseID = str(counter)
+            if len(caseID) == 1:
+                id = f'E{self.section_id}-00{caseID} '
+            elif len(caseID) == 2:
+                id = f'E{self.section_id}-0{caseID} '
+            else:
+                id = f'E{self.section_id}-{caseID} '
+
             test.run_test_case(id)
 
 #############################################
