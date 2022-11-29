@@ -1,4 +1,4 @@
-from ..test_framwork.Test_Logger import TestLogger
+from ..test_framwork.Test_Logger import xlsx_factory
 from ..test_framwork.Test_Cases import Test_Section
 from ..test_framwork.Test_Cases import Code
 from ..test_framwork.Test_Cases import Condition_Check
@@ -139,13 +139,13 @@ class Test_Environment:
     def setup_tests(self):
         '''for update
         '''
-        section7 = Test_Section("GNSS packet reasonable check")
-        self.test_sections.append(section7)
-        section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_week))
-        section7.add_test_case(Code("check week", self.scripts.GNSS_packet_reasonable_check_time_ms))
-        section7.add_test_case(Code("check position type", self.scripts.GNSS_packet_reasonable_check_position_type))
-        section7.add_test_case(Code("check number of satellites", self.scripts.GNSS_packet_reasonable_check_satellites))
-        section7.add_test_case(Code("check latitude and longitude", self.scripts.GNSS_packet_reasonable_check_latlongitude))
+        section1 = Test_Section("User command test")
+        self.test_sections.append(section1)
+        section1.add_test_case(Code("Get production test",  self.scripts.get_production_info))
+        section1.add_test_case(Code("Check the separator in response of Ping message", self.scripts.info_separator_check))
+        section1.add_test_case(Code("Get user configuration parameters test", self.scripts.get_user_configuration_parameters))
+        section1.add_test_case(Code("Set user configuration parameters test", self.scripts.set_user_configuration))
+        section1.add_test_case(Code("Save user configuration test", self.scripts.save_user_configuration))
 
     def run_tests(self):
         for section in self.test_sections:
@@ -156,14 +156,30 @@ class Test_Environment:
         for section in self.test_sections:
             print("Section " + str(section.section_id) + ": " + section.section_name + "\r\n")
             for test in section.test_cases:
-                id = str(section.section_id) + "." + str(test.test_id)
+                # id = str(section.section_id) + "-" + str(test.test_id)
+                id = f'{test.test_id}'
                 result_str = "Passed --> " if test.result['status'] else "Failed --x "
                 print(result_str + id + " " + test.test_case_name + " Expected: "+ test.result['expected'] + " Actual: "+  test.result['actual'] + "\r\n")
 
     def log_results(self, file_name):
-        logger = TestLogger(file_name)
-        field_names = ['id', 'test_name', 'expected', 'actual', 'status']
-        logger.create_csv(field_names)
+        xf = xlsx_factory()
+        test_case_sheet = xf.sheet_ready()
+        test_actual_val_column = test_case_sheet[0]
+        test_result_column = test_case_sheet[1]
         for section in self.test_sections:
             for test in section.test_cases:
-                logger.write2csv(test.result)
+                case_id = test.result['id'][0:2]
+                case_num = int(test.result['id'][3:6]) - 1
+                status = test.result['status']
+                actual_val = test.result['actual']
+                if status == False:
+                    result_field = test_result_column[case_id]
+                    actual_val_field = test_actual_val_column[case_id]
+                    xf.change_val(result_field, case_num, 'failed')
+                    xf.change_val(actual_val_field, case_num, actual_val)
+                    xf.set_cell_color(result_field, case_num)
+                    xf.set_cell_color(actual_val_field, case_num)
+
+
+        xf.savef(file_name)
+                    
